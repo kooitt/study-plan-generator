@@ -4,124 +4,268 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Study Plan Generator</title>
+<meta name="description" content="Generate a printable, day-by-day study schedule from your subjects, topics, and available time." />
 <style>
   :root {
-    --bg: #f6f7fb;
+    --bg: #f5f6fa;
     --panel: #ffffff;
+    --panel-alt: #fafbfd;
     --ink: #1a2238;
+    --ink-2: #334155;
     --muted: #6b7280;
+    --muted-2: #9ca3af;
     --line: #e5e7eb;
     --line-strong: #cbd5e1;
     --accent: #1f3a5f;
     --accent-soft: #e8ecf1;
+    --accent-ink: #1f3a5f;
     --success: #0f766e;
+    --success-bg: #d1fae5;
     --danger: #b91c1c;
+    --danger-bg: #fee2e2;
     --warn: #b45309;
+    --warn-bg: #ffedd5;
     --chip-bg: #eef2ff;
     --chip-ink: #3730a3;
-    --radius: 10px;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, .05);
     --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 1px 3px rgba(16, 24, 40, .06);
   }
+  html[data-theme="dark"] {
+    --bg: #0b1220;
+    --panel: #111a2c;
+    --panel-alt: #0f1626;
+    --ink: #e5e7eb;
+    --ink-2: #cbd5e1;
+    --muted: #94a3b8;
+    --muted-2: #64748b;
+    --line: #1f2a44;
+    --line-strong: #2b3a5c;
+    --accent: #8ab4ff;
+    --accent-soft: #1c2a4a;
+    --accent-ink: #8ab4ff;
+    --success: #34d399;
+    --success-bg: #052e2b;
+    --danger: #f87171;
+    --danger-bg: #2b1212;
+    --warn: #fbbf24;
+    --warn-bg: #2a1d08;
+    --chip-bg: #1c2a4a;
+    --chip-ink: #a5b4fc;
+  }
+
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
     font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans", Arial, sans-serif;
     color: var(--ink);
     background: var(--bg);
+    -webkit-font-smoothing: antialiased;
   }
+  button { font: inherit; color: inherit; }
+
+  /* ---------- Header ---------- */
   header.page {
-    padding: 22px 32px 18px;
+    position: sticky; top: 0; z-index: 20;
+    padding: 14px 24px;
     border-bottom: 1px solid var(--line);
-    background: var(--panel);
-    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+    background: color-mix(in srgb, var(--panel) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(8px);
+    -webkit-backdrop-filter: saturate(180%) blur(8px);
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
   }
-  header.page h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: -0.01em; }
-  header.page .sub { color: var(--muted); font-size: 13px; }
-  header.page .actions { margin-left: auto; display: flex; gap: 8px; }
+  header.page h1 { margin: 0; font-size: 18px; color: var(--accent-ink); letter-spacing: -0.01em; font-weight: 700; }
+  header.page .sub { color: var(--muted); font-size: 12px; }
+  header.page .spacer { flex: 1; }
+  header.page .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ---------- Layout ---------- */
   main {
     display: grid;
-    grid-template-columns: minmax(360px, 440px) 1fr;
-    gap: 20px;
-    padding: 20px;
+    grid-template-columns: minmax(360px, 460px) 1fr;
+    gap: 18px;
+    padding: 18px;
     align-items: start;
   }
   @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
 
+  /* ---------- Panel ---------- */
   .panel {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    padding: 16px;
-    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    box-shadow: var(--shadow-sm);
   }
+  .panel + .panel { margin-top: 14px; }
   .panel h2 {
-    font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
-    color: var(--accent); margin: 0 0 10px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--muted); margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
   }
-  .panel h3 { font-size: 13px; margin: 14px 0 8px; color: var(--ink); }
-  .panel .hint { font-size: 12px; color: var(--muted); margin: -4px 0 10px; }
+  .panel h2 .num {
+    display: inline-flex; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent-ink);
+    align-items: center; justify-content: center; font-weight: 700; font-size: 11px;
+  }
+  .panel h2 .title { color: var(--ink-2); font-weight: 700; letter-spacing: .03em; }
+  .panel h3 { font-size: 12px; margin: 12px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  .hint { font-size: 12px; color: var(--muted); margin: -2px 0 10px; }
 
+  /* ---------- Form controls ---------- */
   label.field { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
   input[type="text"], input[type="number"], input[type="date"], select, textarea {
     width: 100%;
-    padding: 7px 9px;
+    padding: 7px 10px;
     font: inherit;
     color: var(--ink);
-    background: #fff;
+    background: var(--panel);
     border: 1px solid var(--line-strong);
     border-radius: 7px;
     outline: none;
+    transition: border-color .12s, box-shadow .12s;
   }
-  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31,58,95,.12); }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  /* Stepper input */
+  .stepper {
+    display: inline-grid; grid-template-columns: 28px 1fr 28px;
+    align-items: stretch; border: 1px solid var(--line-strong); border-radius: 7px;
+    overflow: hidden; background: var(--panel);
+  }
+  .stepper button {
+    border: 0; background: transparent; color: var(--muted); cursor: pointer;
+    font-weight: 600; font-size: 14px;
+  }
+  .stepper button:hover { background: var(--panel-alt); color: var(--ink); }
+  .stepper input {
+    border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line);
+    border-radius: 0; text-align: center; padding: 6px 2px; font-variant-numeric: tabular-nums;
+  }
+  .stepper input:focus { box-shadow: none; }
+
   .slots-grid {
     display: grid;
-    grid-template-columns: 1fr 90px 40px;
-    gap: 6px 8px;
+    grid-template-columns: 1fr 104px;
+    gap: 6px 10px;
     align-items: center;
   }
-  .slots-grid .slot-label { font-size: 12px; color: var(--ink); }
-  .slots-grid .unit { font-size: 12px; color: var(--muted); }
+  .slots-grid .slot-label { font-size: 13px; color: var(--ink-2); }
 
+  /* ---------- Buttons ---------- */
   .btn {
     display: inline-flex; align-items: center; gap: 6px;
-    font: inherit; font-weight: 500;
-    padding: 7px 12px; border-radius: 7px;
+    font: inherit; font-weight: 500; font-size: 13px;
+    padding: 6px 11px; border-radius: 7px;
     border: 1px solid var(--line-strong);
-    background: #fff; color: var(--ink);
-    cursor: pointer;
+    background: var(--panel); color: var(--ink);
+    cursor: pointer; white-space: nowrap;
+    transition: background .12s, color .12s, border-color .12s, transform .06s;
   }
-  .btn:hover { background: #f8fafc; }
+  .btn:hover { background: var(--panel-alt); }
+  .btn:active { transform: translateY(1px); }
   .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .btn.primary:hover { background: #162d4a; }
+  html[data-theme="dark"] .btn.primary { color: #0b1220; }
+  .btn.primary:hover { filter: brightness(0.95); }
   .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); padding: 4px 6px; }
-  .btn.ghost:hover { color: var(--danger); background: #fef2f2; }
-  .btn.sm { font-size: 12px; padding: 5px 8px; }
+  .btn.ghost:hover { color: var(--danger); background: var(--danger-bg); }
+  .btn.sm { font-size: 12px; padding: 4px 8px; }
+  .btn.icon { padding: 6px 8px; }
 
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 999px;
+    font-size: 12px; font-weight: 500;
+    background: var(--chip-bg); color: var(--chip-ink);
+    border: 1px solid transparent; cursor: pointer;
+    transition: background .1s;
+  }
+  .chip:hover { filter: brightness(0.97); }
+  .chip.active { background: var(--accent); color: #fff; }
+  html[data-theme="dark"] .chip.active { color: #0b1220; }
+
+  /* ---------- Subjects ---------- */
   .subject {
     border: 1px solid var(--line);
+    border-left: 3px solid var(--subj-color, var(--accent));
     border-radius: 8px;
-    padding: 10px;
+    padding: 10px 12px;
     margin-bottom: 10px;
-    background: #fafbfd;
+    background: var(--panel-alt);
   }
-  .subject .sub-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-  .subject .sub-head input { flex: 1; }
-  .subject .sub-head select { width: 110px; }
+  .subject .sub-head { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .subject .handle {
+    color: var(--muted-2); cursor: grab; user-select: none; font-size: 14px;
+    padding: 2px 4px; line-height: 1;
+  }
+  .subject .handle:active { cursor: grabbing; }
+  .subject[draggable="true"] { cursor: default; }
+  .subject.dragging { opacity: .4; }
+  .subject.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+  .subject .sub-head input { flex: 1; font-weight: 600; }
 
-  .topic-row {
+  .weight-row {
     display: grid;
-    grid-template-columns: 1fr 56px 56px 28px;
-    gap: 6px;
-    margin-bottom: 5px;
-    align-items: center;
+    grid-template-columns: 60px 1fr 60px;
+    gap: 8px; align-items: center;
+    margin: 6px 0 8px;
   }
-  .topic-row input { padding: 5px 7px; font-size: 13px; }
-  .add-topic { font-size: 12px; color: var(--accent); cursor: pointer; background: none; border: none; padding: 2px 0; }
+  .weight-row label { font-size: 11px; color: var(--muted); }
+  .weight-row .val { font-size: 12px; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type="range"] {
+    appearance: none; -webkit-appearance: none; width: 100%; height: 4px;
+    background: var(--line); border-radius: 999px; outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none; -webkit-appearance: none; width: 16px; height: 16px;
+    background: var(--accent); border-radius: 50%; cursor: pointer; border: 2px solid var(--panel);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px; background: var(--accent); border-radius: 50%; cursor: pointer; border: 2px solid var(--panel);
+  }
+
+  .topics-header {
+    display: grid; grid-template-columns: 1fr 58px 58px 28px;
+    gap: 6px; color: var(--muted); font-size: 11px; margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .topic-row {
+    display: grid; grid-template-columns: 1fr 58px 58px 28px;
+    gap: 6px; margin-bottom: 5px; align-items: center;
+  }
+  .topic-row input { padding: 5px 8px; font-size: 13px; }
+  .add-topic {
+    font-size: 12px; color: var(--accent-ink); cursor: pointer;
+    background: none; border: 0; padding: 3px 0; margin-top: 2px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
   .add-topic:hover { text-decoration: underline; }
 
-  /* Output */
+  /* ---------- Toast ---------- */
+  #toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+    padding: 8px 16px; border-radius: 999px; font-size: 13px;
+    background: var(--ink); color: var(--panel);
+    opacity: 0; pointer-events: none; transition: all .25s;
+    z-index: 100;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.err { background: var(--danger); color: #fff; }
+  #toast.ok  { background: var(--success); color: #fff; }
+
+  .save-indicator {
+    font-size: 11px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px;
+  }
+  .save-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted-2); }
+  .save-indicator.saved .dot { background: var(--success); }
+
+  /* ---------- Output ---------- */
   .output-empty {
     border: 1px dashed var(--line-strong);
     border-radius: var(--radius);
@@ -132,22 +276,36 @@
   }
 
   .stats-strip {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 16px;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 10px; margin-bottom: 16px;
   }
+  @media (max-width: 720px) { .stats-strip { grid-template-columns: repeat(2, 1fr); } }
   .stat {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 10px;
-    padding: 12px 14px;
+    padding: 10px 12px;
   }
-  .stat .val { font-size: 20px; font-weight: 600; color: var(--accent); }
-  .stat .lab { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+  .stat .val { font-size: 20px; font-weight: 700; color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+  .stat .lab { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-top: 2px; font-weight: 600; }
 
-  h2.section { font-size: 15px; color: var(--accent); margin: 22px 0 10px; }
+  .progress-wrap {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 16px;
+  }
+  .progress-wrap .top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .progress-wrap .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  .progress-wrap .count { margin-left: auto; font-variant-numeric: tabular-nums; font-size: 12px; color: var(--ink-2); font-weight: 600; }
+  .progress-bar {
+    height: 8px; background: var(--line); border-radius: 999px; overflow: hidden;
+  }
+  .progress-bar > div {
+    height: 100%; background: var(--success); transition: width .3s ease;
+  }
+
+  h2.section { font-size: 15px; color: var(--accent-ink); margin: 22px 0 10px; font-weight: 700; }
   h2.section:first-child { margin-top: 0; }
+  h2.section .hint { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 8px; }
 
   table.plan {
     width: 100%; border-collapse: collapse; background: var(--panel);
@@ -157,60 +315,102 @@
     padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); font-size: 13px; vertical-align: top;
   }
   table.plan th {
-    background: var(--accent-soft); color: var(--accent);
-    font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600;
+    background: var(--accent-soft); color: var(--accent-ink);
+    font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700;
   }
   table.plan tr:last-child td { border-bottom: 0; }
-  table.plan td.when { color: var(--muted); width: 140px; white-space: nowrap; }
-  table.plan td.subj { font-weight: 600; width: 140px; }
+  table.plan td.when { color: var(--muted); width: 140px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.plan td.subj { width: 130px; }
 
-  .day-title {
-    display: flex; align-items: baseline; gap: 10px;
-    margin: 18px 0 6px;
+  .subj-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    background: var(--subj-bg); color: var(--subj-ink);
   }
-  .day-title .date { font-size: 14px; font-weight: 600; color: var(--accent); }
-  .day-title .tag {
-    font-size: 11px; color: var(--muted);
-    background: var(--chip-bg); color: var(--chip-ink);
-    padding: 2px 8px; border-radius: 20px;
-  }
-  .day-title .total { font-size: 12px; color: var(--muted); margin-left: auto; }
 
+  .day-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    margin: 14px 0; overflow: hidden;
+  }
+  .day-card .day-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: var(--panel-alt); border-bottom: 1px solid var(--line);
+  }
+  .day-card .date { font-size: 14px; font-weight: 700; color: var(--accent-ink); }
+  .day-card .tag {
+    font-size: 10px; color: var(--chip-ink); text-transform: uppercase; letter-spacing: .06em;
+    background: var(--chip-bg); padding: 2px 8px; border-radius: 20px; font-weight: 700;
+  }
+  .day-card .total {
+    margin-left: auto; font-size: 12px; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .day-card table.plan { border: 0; border-radius: 0; }
+
+  /* ---------- Coverage checklist ---------- */
   .coverage-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 12px;
   }
   .cov-card {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 12px 14px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-left: 3px solid var(--subj-color, var(--accent));
+    border-radius: 10px; padding: 12px 14px;
   }
-  .cov-card h4 { margin: 0 0 8px; font-size: 13px; color: var(--accent); }
-  .cov-card ul { margin: 0; padding: 0; list-style: none; }
-  .cov-card li {
-    display: flex; justify-content: space-between; gap: 8px;
-    font-size: 12px; padding: 3px 0; border-top: 1px dashed var(--line);
+  .cov-card h4 { margin: 0 0 8px; font-size: 13px; color: var(--ink); display: flex; gap: 6px; align-items: center; }
+  .cov-card h4 .count { color: var(--muted); font-weight: 500; font-size: 11px; margin-left: auto; }
+  .cov-list { margin: 0; padding: 0; list-style: none; }
+  .cov-list li {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; padding: 5px 0; border-top: 1px dashed var(--line);
+    cursor: pointer; user-select: none;
   }
-  .cov-card li:first-child { border-top: 0; }
-  .cov-card li .when { color: var(--muted); white-space: nowrap; }
-  .cov-card li .box { color: var(--muted); margin-right: 4px; }
+  .cov-list li:first-child { border-top: 0; }
+  .cov-list li .box {
+    width: 14px; height: 14px; border: 1.5px solid var(--line-strong); border-radius: 3px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 10px; font-weight: 700; flex-shrink: 0;
+  }
+  .cov-list li.done .box { background: var(--success); border-color: var(--success); }
+  .cov-list li.done .box::before { content: "\2713"; }
+  .cov-list li.done .topic { color: var(--muted); text-decoration: line-through; }
+  .cov-list li .topic { flex: 1; min-width: 0; }
+  .cov-list li .when { color: var(--muted); white-space: nowrap; font-size: 11px; font-variant-numeric: tabular-nums; }
 
-  .warn {
-    padding: 10px 12px; border-radius: 8px; background: #fff7ed; border: 1px solid #fed7aa;
-    color: #9a3412; font-size: 13px; margin: 10px 0;
+  /* Validation badge */
+  .errors {
+    padding: 10px 12px; border-radius: 8px;
+    background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+    color: var(--warn); font-size: 13px; margin: 0 0 14px;
   }
+  .errors ul { margin: 4px 0 0 18px; padding: 0; }
 
-  /* Print */
+  /* Switch */
+  .switch {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--muted); cursor: pointer; user-select: none;
+  }
+  .switch input { display: none; }
+  .switch .track {
+    width: 28px; height: 16px; background: var(--line-strong); border-radius: 999px;
+    position: relative; transition: background .15s;
+  }
+  .switch .track::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 12px; height: 12px; background: #fff; border-radius: 50%;
+    transition: left .15s;
+  }
+  .switch input:checked ~ .track { background: var(--accent); }
+  .switch input:checked ~ .track::after { left: 14px; }
+
+  /* ---------- Print ---------- */
   @media print {
     body { background: #fff; }
-    header.page, .form-col, .actions { display: none !important; }
+    header.page, .form-col, .actions, .progress-wrap { display: none !important; }
     main { grid-template-columns: 1fr; padding: 0; gap: 0; }
-    .panel, .stat, .cov-card, table.plan { box-shadow: none !important; break-inside: avoid; }
+    .panel, .stat, .cov-card, table.plan, .day-card { box-shadow: none !important; break-inside: avoid; }
     h2.section { break-after: avoid; }
-    .day-title { break-inside: avoid; }
-    table.plan { break-inside: auto; }
+    .day-card { break-inside: avoid; border-radius: 0; }
     table.plan tr { break-inside: avoid; }
     @page { margin: 14mm; }
   }
@@ -220,20 +420,29 @@
   <header class="page">
     <div>
       <h1>Study Plan Generator</h1>
-      <div class="sub">Enter your dates, time slots, and subjects — get a printable day-by-day plan.</div>
+      <div class="sub">Live, auto-saving, printable.</div>
     </div>
+    <div class="spacer"></div>
+    <div id="saveIndicator" class="save-indicator"><span class="dot"></span><span class="txt">Not yet saved</span></div>
     <div class="actions">
-      <button class="btn" id="loadSample">Load sample</button>
+      <label class="switch" title="Toggle dark mode">
+        <input type="checkbox" id="darkToggle" />
+        <span class="track"></span>
+        <span id="darkLabel">Dark</span>
+      </label>
+      <button class="btn" id="exportBtn" title="Download your plan as JSON">Export</button>
+      <button class="btn" id="importBtn" title="Load a previously exported JSON">Import</button>
+      <button class="btn" id="loadSample">Sample</button>
       <button class="btn" id="resetAll">Reset</button>
-      <button class="btn primary" id="generate">Generate plan</button>
-      <button class="btn" id="print" disabled>Print / Save PDF</button>
+      <button class="btn primary" id="print" title="Opens the print dialog — choose 'Save as PDF' to export">Print / PDF</button>
     </div>
   </header>
 
   <main>
+    <!-- ----- FORM COLUMN ----- -->
     <aside class="form-col">
       <section class="panel">
-        <h2>1 · Dates</h2>
+        <h2><span class="num">1</span><span class="title">Dates</span></h2>
         <div class="row">
           <div>
             <label class="field">Start date</label>
@@ -244,470 +453,573 @@
             <input type="date" id="endDate" />
           </div>
         </div>
+        <div id="dateSummary" class="hint" style="margin-top:8px"></div>
       </section>
 
-      <section class="panel" style="margin-top: 14px">
-        <h2>2 · Time slots (minutes per session)</h2>
-        <p class="hint">Leave at 0 to skip that session. Weekday slots run Mon–Fri.</p>
+      <section class="panel">
+        <h2><span class="num">2</span><span class="title">Time slots</span></h2>
+        <p class="hint">Minutes per session. Set to 0 to skip. Quick presets:</p>
+        <div class="chip-row" id="presets" style="margin-bottom:10px">
+          <button class="chip" data-preset="light">Light</button>
+          <button class="chip" data-preset="standard">Standard</button>
+          <button class="chip" data-preset="intensive">Intensive</button>
+          <button class="chip" data-preset="clear">Clear all</button>
+        </div>
 
-        <h3>Weekday</h3>
+        <h3>Weekday (Mon–Fri)</h3>
         <div class="slots-grid">
-          <div class="slot-label">Afternoon</div>
-          <input type="number" min="0" step="5" id="wd_afternoon" value="30" />
-          <span class="unit">min</span>
-          <div class="slot-label">Evening</div>
-          <input type="number" min="0" step="5" id="wd_evening" value="60" />
-          <span class="unit">min</span>
+          <div class="slot-label">Afternoon</div><div id="wrap_wd_afternoon"></div>
+          <div class="slot-label">Evening</div><div id="wrap_wd_evening"></div>
         </div>
 
         <h3>Saturday</h3>
         <div class="slots-grid">
-          <div class="slot-label">Morning</div>
-          <input type="number" min="0" step="5" id="sat_morning" value="60" />
-          <span class="unit">min</span>
-          <div class="slot-label">Afternoon 1</div>
-          <input type="number" min="0" step="5" id="sat_aft1" value="90" />
-          <span class="unit">min</span>
-          <div class="slot-label">Afternoon 2</div>
-          <input type="number" min="0" step="5" id="sat_aft2" value="90" />
-          <span class="unit">min</span>
-          <div class="slot-label">Evening</div>
-          <input type="number" min="0" step="5" id="sat_evening" value="60" />
-          <span class="unit">min</span>
+          <div class="slot-label">Morning</div><div id="wrap_sat_morning"></div>
+          <div class="slot-label">Afternoon 1</div><div id="wrap_sat_aft1"></div>
+          <div class="slot-label">Afternoon 2</div><div id="wrap_sat_aft2"></div>
+          <div class="slot-label">Evening</div><div id="wrap_sat_evening"></div>
         </div>
 
         <h3>Sunday</h3>
         <div class="slots-grid">
-          <div class="slot-label">Morning</div>
-          <input type="number" min="0" step="5" id="sun_morning" value="30" />
-          <span class="unit">min</span>
-          <div class="slot-label">Afternoon 1</div>
-          <input type="number" min="0" step="5" id="sun_aft1" value="90" />
-          <span class="unit">min</span>
-          <div class="slot-label">Afternoon 2</div>
-          <input type="number" min="0" step="5" id="sun_aft2" value="90" />
-          <span class="unit">min</span>
-          <div class="slot-label">Evening</div>
-          <input type="number" min="0" step="5" id="sun_evening" value="60" />
-          <span class="unit">min</span>
+          <div class="slot-label">Morning</div><div id="wrap_sun_morning"></div>
+          <div class="slot-label">Afternoon 1</div><div id="wrap_sun_aft1"></div>
+          <div class="slot-label">Afternoon 2</div><div id="wrap_sun_aft2"></div>
+          <div class="slot-label">Evening</div><div id="wrap_sun_evening"></div>
         </div>
+
+        <div id="timeSummary" class="hint" style="margin-top:10px"></div>
       </section>
 
-      <section class="panel" style="margin-top: 14px">
-        <h2>3 · Subjects &amp; topics</h2>
-        <p class="hint">
-          Weight controls how much time a subject gets relative to the others.
-          Higher weight = more time (e.g. practice-heavy subjects).
-        </p>
+      <section class="panel">
+        <h2><span class="num">3</span><span class="title">Subjects &amp; topics</span></h2>
+        <p class="hint">Drag to reorder. Use the slider to give a subject more or less time relative to the others.</p>
         <div id="subjects"></div>
         <button class="btn sm" id="addSubject" type="button">+ Add subject</button>
       </section>
 
-      <section class="panel" style="margin-top: 14px">
-        <h2>4 · Options</h2>
+      <section class="panel">
+        <h2><span class="num">4</span><span class="title">Options</span></h2>
         <div class="row">
           <div>
             <label class="field">Reserve for review</label>
             <select id="reviewPct">
               <option value="0">No review time</option>
               <option value="10">10% of total</option>
-              <option value="15" selected>15% of total</option>
+              <option value="15">15% of total</option>
               <option value="20">20% of total</option>
               <option value="25">25% of total</option>
             </select>
           </div>
           <div>
-            <label class="field">Last day: rest?</label>
+            <label class="field">Last day</label>
             <select id="restLastDay">
-              <option value="yes" selected>Yes — light review only</option>
-              <option value="no">No — full study</option>
+              <option value="yes">Rest / light review</option>
+              <option value="no">Full study</option>
             </select>
           </div>
         </div>
       </section>
     </aside>
 
+    <!-- ----- OUTPUT COLUMN ----- -->
     <section class="output-col">
       <div id="output">
-        <div class="output-empty">
-          Fill in the form on the left, click <b>Generate plan</b>, and your schedule will appear here.
-        </div>
+        <div class="output-empty">Fill in the form — your schedule appears here automatically.</div>
       </div>
     </section>
   </main>
 
-<script>
-/* ---------- Data helpers ---------- */
-const $ = (id) => document.getElementById(id);
-const fmt = (d) => d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
-const fmtShort = (d) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-const mmss = (mins) => mins >= 60 ? `${(mins/60).toFixed(mins % 60 === 0 ? 0 : 1)}h` : `${mins}m`;
-const dayType = (d) => {
-  const dow = d.getDay();
-  if (dow === 0) return 'sunday';
-  if (dow === 6) return 'saturday';
-  return 'weekday';
-};
-const dayTypeLabel = (t) => t === 'weekday' ? 'Weekday' : t === 'saturday' ? 'Saturday' : 'Sunday';
+  <input type="file" id="fileInput" accept="application/json,.json" style="display:none" />
+  <div id="toast" role="status" aria-live="polite"></div>
 
-/* ---------- Subject list management ---------- */
-const DEFAULT_SUBJECT = () => ({
-  name: 'New Subject',
-  weight: 1.0,
-  topics: [{ name: 'Topic 1', startPage: 1, endPage: 10 }],
+<script>
+/* =========================================================
+   State & persistence
+========================================================= */
+const STORAGE_KEY = 'study-plan-generator/v2';
+const DONE_KEY    = 'study-plan-generator/v2/done';
+
+const COLORS = [
+  { h: '#4f46e5', bg: '#eef2ff', ink: '#3730a3' },
+  { h: '#0891b2', bg: '#cffafe', ink: '#0e7490' },
+  { h: '#059669', bg: '#d1fae5', ink: '#065f46' },
+  { h: '#d97706', bg: '#ffedd5', ink: '#9a3412' },
+  { h: '#dc2626', bg: '#fee2e2', ink: '#991b1b' },
+  { h: '#7c3aed', bg: '#ede9fe', ink: '#5b21b6' },
+  { h: '#db2777', bg: '#fce7f3', ink: '#9d174d' },
+  { h: '#0ea5e9', bg: '#e0f2fe', ink: '#075985' },
+  { h: '#65a30d', bg: '#ecfccb', ink: '#3f6212' },
+  { h: '#ea580c', bg: '#ffedd5', ink: '#7c2d12' },
+];
+
+const SLOT_KEYS = ['wd_afternoon','wd_evening','sat_morning','sat_aft1','sat_aft2','sat_evening','sun_morning','sun_aft1','sun_aft2','sun_evening'];
+const PRESETS = {
+  light:     { wd_afternoon: 15, wd_evening: 30, sat_morning: 30, sat_aft1: 60, sat_aft2: 60, sat_evening: 30, sun_morning: 0,  sun_aft1: 60, sun_aft2: 60, sun_evening: 30 },
+  standard:  { wd_afternoon: 30, wd_evening: 60, sat_morning: 60, sat_aft1: 90, sat_aft2: 90, sat_evening: 60, sun_morning: 30, sun_aft1: 90, sun_aft2: 90, sun_evening: 60 },
+  intensive: { wd_afternoon: 60, wd_evening: 90, sat_morning: 90, sat_aft1: 120, sat_aft2: 120, sat_evening: 90, sun_morning: 60, sun_aft1: 120, sun_aft2: 120, sun_evening: 90 },
+  clear:     Object.fromEntries(SLOT_KEYS.map((k) => [k, 0])),
+};
+
+const DEFAULT_STATE = () => ({
+  startDate: todayISO(),
+  endDate:   addDaysISO(todayISO(), 15),
+  slots:     { ...PRESETS.standard },
+  subjects:  [sampleSubject(0)],
+  reviewPct: 15,
+  restLastDay: 'yes',
+  dark:      false,
 });
 
-let subjects = [];
+let state = loadState();
+let doneMap = loadDone();
+let nextId = 1;
+
+function uid() { return `id${Date.now().toString(36)}${(nextId++).toString(36)}`; }
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function addDaysISO(iso, n) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+function sampleSubject(i) {
+  return { id: uid(), name: 'New Subject', weight: 1.0, topics: [{ id: uid(), name: 'Topic 1', startPage: 1, endPage: 10 }] };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_STATE();
+    const s = JSON.parse(raw);
+    (s.subjects || []).forEach((sub) => {
+      if (!sub.id) sub.id = uid();
+      (sub.topics || []).forEach((t) => { if (!t.id) t.id = uid(); });
+    });
+    return { ...DEFAULT_STATE(), ...s, slots: { ...PRESETS.standard, ...(s.slots || {}) } };
+  } catch (e) { return DEFAULT_STATE(); }
+}
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); markSaved(); } catch (e) {} }
+function loadDone() {
+  try { return JSON.parse(localStorage.getItem(DONE_KEY) || '{}'); } catch (e) { return {}; }
+}
+function saveDone() { try { localStorage.setItem(DONE_KEY, JSON.stringify(doneMap)); } catch (e) {} }
+
+/* =========================================================
+   Utility
+========================================================= */
+const $  = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtLong  = (d) => d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+const fmtShort = (d) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+const mmssShort = (m) => m >= 60 ? `${(m/60).toFixed(m % 60 === 0 ? 0 : 1)}h` : `${m}m`;
+const dayType  = (d) => { const w = d.getDay(); return w === 0 ? 'sunday' : w === 6 ? 'saturday' : 'weekday'; };
+const dayTypeLabel = (t) => t === 'weekday' ? 'Weekday' : t === 'saturday' ? 'Saturday' : 'Sunday';
+const colorFor = (i) => COLORS[i % COLORS.length];
+
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+function toast(msg, kind = '') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = `show ${kind}`;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+}
+function markSaved() {
+  const el = $('saveIndicator');
+  el.classList.add('saved');
+  el.querySelector('.txt').textContent = 'Saved locally';
+  clearTimeout(markSaved._t);
+  markSaved._t = setTimeout(() => {
+    el.classList.remove('saved');
+    el.querySelector('.txt').textContent = 'Saved locally';
+  }, 1000);
+}
+
+/* =========================================================
+   Stepper widget
+========================================================= */
+function makeStepper(parentId, id, value, { step = 5, min = 0, max = 240 } = {}) {
+  const host = $(parentId);
+  host.innerHTML = `
+    <div class="stepper">
+      <button type="button" data-act="dec" aria-label="Decrease">−</button>
+      <input type="number" id="${id}" value="${value}" min="${min}" max="${max}" step="${step}" inputmode="numeric" />
+      <button type="button" data-act="inc" aria-label="Increase">+</button>
+    </div>`;
+  const input = $(id);
+  host.querySelector('[data-act="dec"]').addEventListener('click', () => {
+    input.value = Math.max(min, (+input.value || 0) - step); input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  host.querySelector('[data-act="inc"]').addEventListener('click', () => {
+    input.value = Math.min(max, (+input.value || 0) + step); input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  return input;
+}
+
+/* =========================================================
+   Rendering — form
+========================================================= */
+function renderDates() {
+  $('startDate').value = state.startDate;
+  $('endDate').value   = state.endDate;
+  updateDateSummary();
+}
+
+function renderSlots() {
+  SLOT_KEYS.forEach((k) => makeStepper(`wrap_${k}`, k, state.slots[k] || 0));
+  SLOT_KEYS.forEach((k) => {
+    $(k).addEventListener('input', () => {
+      state.slots[k] = Math.max(0, +$(k).value || 0);
+      onChange();
+    });
+  });
+  updateTimeSummary();
+}
+
+function renderOptions() {
+  $('reviewPct').value  = String(state.reviewPct);
+  $('restLastDay').value = state.restLastDay;
+  $('darkToggle').checked = !!state.dark;
+  applyTheme();
+  $('reviewPct').addEventListener('change',  () => { state.reviewPct = +$('reviewPct').value; onChange(); });
+  $('restLastDay').addEventListener('change', () => { state.restLastDay = $('restLastDay').value; onChange(); });
+  $('darkToggle').addEventListener('change', () => { state.dark = $('darkToggle').checked; applyTheme(); saveState(); });
+}
+function applyTheme() { document.documentElement.dataset.theme = state.dark ? 'dark' : 'light'; }
 
 function renderSubjects() {
   const box = $('subjects');
   box.innerHTML = '';
-  subjects.forEach((s, si) => {
+  state.subjects.forEach((s, si) => {
+    const color = colorFor(si);
     const card = document.createElement('div');
     card.className = 'subject';
+    card.draggable = true;
+    card.dataset.si = si;
+    card.style.setProperty('--subj-color', color.h);
     card.innerHTML = `
       <div class="sub-head">
-        <input type="text" value="${escapeHtml(s.name)}" data-k="name" data-si="${si}" placeholder="Subject name" />
-        <select data-k="weight" data-si="${si}" title="Relative weight">
-          <option value="0.7"${s.weight==0.7?' selected':''}>Light (0.7×)</option>
-          <option value="1"${s.weight==1?' selected':''}>Normal (1×)</option>
-          <option value="1.3"${s.weight==1.3?' selected':''}>Heavy (1.3×)</option>
-          <option value="1.6"${s.weight==1.6?' selected':''}>Very heavy (1.6×)</option>
-        </select>
+        <span class="handle" title="Drag to reorder">⋮⋮</span>
+        <input type="text" value="${esc(s.name)}" data-k="name" data-si="${si}" placeholder="Subject name" />
         <button class="btn ghost" title="Remove subject" data-rm-s="${si}">✕</button>
       </div>
+      <div class="weight-row">
+        <label>Weight</label>
+        <input type="range" min="0.5" max="2" step="0.1" value="${s.weight}" data-k="weight" data-si="${si}" />
+        <div class="val"><b>${(+s.weight).toFixed(1)}×</b></div>
+      </div>
+      <div class="topics-header"><div>Topic name</div><div>Start pg</div><div>End pg</div><div></div></div>
       <div class="topics" data-si="${si}">
-        <div class="topic-row" style="color:var(--muted); font-size:11px;">
-          <div>Topic name</div><div>Start pg</div><div>End pg</div><div></div>
-        </div>
         ${s.topics.map((t, ti) => `
           <div class="topic-row">
-            <input type="text" value="${escapeHtml(t.name)}" data-k="name" data-si="${si}" data-ti="${ti}" />
+            <input type="text" value="${esc(t.name)}" data-k="name" data-si="${si}" data-ti="${ti}" />
             <input type="number" min="1" value="${t.startPage}" data-k="startPage" data-si="${si}" data-ti="${ti}" />
             <input type="number" min="1" value="${t.endPage}" data-k="endPage" data-si="${si}" data-ti="${ti}" />
-            <button class="btn ghost" title="Remove" data-rm-t="${si}-${ti}">✕</button>
-          </div>
-        `).join('')}
-        <button class="add-topic" data-add-t="${si}">+ Add topic</button>
-      </div>
-    `;
+            <button class="btn ghost" title="Remove topic" data-rm-t="${si}-${ti}">✕</button>
+          </div>`).join('')}
+        <button class="add-topic" type="button" data-add-t="${si}">+ Add topic</button>
+      </div>`;
     box.appendChild(card);
   });
 
+  // inputs
   box.querySelectorAll('input').forEach((el) => {
-    el.addEventListener('input', (e) => {
+    el.addEventListener('input', () => {
       const si = +el.dataset.si;
       const ti = el.dataset.ti !== undefined ? +el.dataset.ti : null;
-      const k = el.dataset.k;
-      if (!subjects[si]) return;
+      const k  = el.dataset.k;
+      if (!state.subjects[si]) return;
       if (ti === null) {
-        subjects[si][k] = k === 'weight' ? parseFloat(el.value) : el.value;
+        if (k === 'weight') {
+          state.subjects[si].weight = parseFloat(el.value);
+          el.parentElement.querySelector('.val').innerHTML = `<b>${(+el.value).toFixed(1)}×</b>`;
+        } else {
+          state.subjects[si][k] = el.value;
+        }
       } else {
-        subjects[si].topics[ti][k] = (k === 'startPage' || k === 'endPage') ? Math.max(1, +el.value || 1) : el.value;
+        state.subjects[si].topics[ti][k] = (k === 'startPage' || k === 'endPage') ? Math.max(1, +el.value || 1) : el.value;
       }
+      onChange({ skipSubjectsRerender: true });
     });
   });
-  box.querySelectorAll('select').forEach((el) => {
-    el.addEventListener('change', () => {
-      const si = +el.dataset.si;
-      subjects[si][el.dataset.k] = parseFloat(el.value);
-    });
-  });
-  box.querySelectorAll('[data-rm-s]').forEach((b) => {
-    b.addEventListener('click', () => { subjects.splice(+b.dataset.rmS, 1); renderSubjects(); });
-  });
-  box.querySelectorAll('[data-rm-t]').forEach((b) => {
+
+  box.querySelectorAll('[data-rm-s]').forEach((b) =>
+    b.addEventListener('click', () => { state.subjects.splice(+b.dataset.rmS, 1); renderSubjects(); onChange(); }));
+  box.querySelectorAll('[data-rm-t]').forEach((b) =>
     b.addEventListener('click', () => {
       const [si, ti] = b.dataset.rmT.split('-').map(Number);
-      subjects[si].topics.splice(ti, 1);
-      if (subjects[si].topics.length === 0) subjects[si].topics.push({ name: 'Topic 1', startPage: 1, endPage: 10 });
-      renderSubjects();
-    });
-  });
-  box.querySelectorAll('[data-add-t]').forEach((b) => {
+      state.subjects[si].topics.splice(ti, 1);
+      if (state.subjects[si].topics.length === 0) state.subjects[si].topics.push({ id: uid(), name: 'Topic 1', startPage: 1, endPage: 10 });
+      renderSubjects(); onChange();
+    }));
+  box.querySelectorAll('[data-add-t]').forEach((b) =>
     b.addEventListener('click', () => {
       const si = +b.dataset.addT;
-      const n = subjects[si].topics.length + 1;
-      const lastEnd = subjects[si].topics.at(-1)?.endPage || 0;
-      subjects[si].topics.push({ name: `Topic ${n}`, startPage: lastEnd + 1, endPage: lastEnd + 10 });
-      renderSubjects();
+      const s  = state.subjects[si];
+      const lastEnd = s.topics.at(-1)?.endPage || 0;
+      s.topics.push({ id: uid(), name: `Topic ${s.topics.length + 1}`, startPage: lastEnd + 1, endPage: lastEnd + 10 });
+      renderSubjects(); onChange();
+    }));
+
+  // Drag-reorder
+  let dragIdx = null;
+  box.querySelectorAll('.subject').forEach((card) => {
+    card.addEventListener('dragstart', (e) => {
+      dragIdx = +card.dataset.si;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', String(dragIdx)); } catch (e2) {}
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('dragover', (e) => { e.preventDefault(); card.classList.add('drag-over'); });
+    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      const to = +card.dataset.si;
+      if (dragIdx === null || dragIdx === to) return;
+      const [m] = state.subjects.splice(dragIdx, 1);
+      state.subjects.splice(to, 0, m);
+      dragIdx = null;
+      renderSubjects(); onChange();
     });
   });
 }
 
-function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-/* ---------- Sample data ---------- */
-function loadSample() {
-  const today = new Date();
-  const start = new Date(today);
-  const end = new Date(today); end.setDate(end.getDate() + 15);
-  $('startDate').value = start.toISOString().slice(0,10);
-  $('endDate').value = end.toISOString().slice(0,10);
-  subjects = [
-    { name: 'Mathematics', weight: 1.6, topics: [
-      { name: 'Topic 1', startPage: 1, endPage: 38 },
-      { name: 'Topic 2', startPage: 40, endPage: 75 },
-      { name: 'Topic 3', startPage: 77, endPage: 83 },
-    ]},
-    { name: 'Science', weight: 1.3, topics: [
-      { name: 'Topic 1', startPage: 1, endPage: 10 },
-      { name: 'Topic 2', startPage: 11, endPage: 34 },
-      { name: 'Topic 3', startPage: 35, endPage: 52 },
-      { name: 'Topic 4', startPage: 53, endPage: 72 },
-    ]},
-    { name: 'History', weight: 1.3, topics: [
-      { name: 'Topic 1', startPage: 1, endPage: 19 },
-      { name: 'Topic 2', startPage: 20, endPage: 33 },
-      { name: 'Topic 3', startPage: 34, endPage: 49 },
-      { name: 'Topic 4', startPage: 50, endPage: 75 },
-    ]},
-    { name: 'Chinese', weight: 1.0, topics: [
-      { name: 'Topic 1', startPage: 1, endPage: 8 },
-      { name: 'Topic 2', startPage: 9, endPage: 16 },
-      { name: 'Topic 3', startPage: 17, endPage: 24 },
-      { name: 'Topic 4', startPage: 25, endPage: 31 },
-      { name: 'Topic 5', startPage: 32, endPage: 40 },
-      { name: 'Topic 6', startPage: 41, endPage: 50 },
-      { name: 'Topic 7', startPage: 51, endPage: 57 },
-      { name: 'Topic 8', startPage: 58, endPage: 64 },
-    ]},
-    { name: 'Malay', weight: 1.0, topics: [
-      { name: 'Topic 1', startPage: 1, endPage: 21 },
-      { name: 'Topic 2', startPage: 22, endPage: 43 },
-      { name: 'Topic 3', startPage: 44, endPage: 63 },
-    ]},
-    { name: 'English', weight: 0.7, topics: [
-      { name: 'Topic 1', startPage: 1, endPage: 21 },
-      { name: 'Topic 2', startPage: 22, endPage: 33 },
-      { name: 'Topic 3', startPage: 34, endPage: 36 },
-    ]},
-  ];
-  renderSubjects();
+/* =========================================================
+   Live summaries in the form
+========================================================= */
+function updateDateSummary() {
+  const s = $('startDate').value, e = $('endDate').value;
+  if (!s || !e) { $('dateSummary').textContent = ''; return; }
+  const sd = new Date(s + 'T00:00:00'), ed = new Date(e + 'T00:00:00');
+  if (ed < sd) { $('dateSummary').innerHTML = `<span style="color:var(--danger)">End date is before start date.</span>`; return; }
+  const days = Math.round((ed - sd) / 86400000) + 1;
+  let wd = 0, sat = 0, sun = 0;
+  const d = new Date(sd);
+  while (d <= ed) { const t = dayType(d); if (t === 'weekday') wd++; else if (t === 'saturday') sat++; else sun++; d.setDate(d.getDate()+1); }
+  $('dateSummary').textContent = `${days} days total · ${wd} weekdays · ${sat} Sat · ${sun} Sun`;
+}
+function updateTimeSummary() {
+  const s = $('startDate').value, e = $('endDate').value;
+  if (!s || !e) { $('timeSummary').textContent = ''; return; }
+  const sd = new Date(s + 'T00:00:00'), ed = new Date(e + 'T00:00:00');
+  if (ed < sd) { $('timeSummary').textContent = ''; return; }
+  let total = 0, sessions = 0;
+  const d = new Date(sd);
+  while (d <= ed) {
+    const t = dayType(d);
+    const slots = t === 'weekday' ? ['wd_afternoon','wd_evening']
+                : t === 'saturday' ? ['sat_morning','sat_aft1','sat_aft2','sat_evening']
+                : ['sun_morning','sun_aft1','sun_aft2','sun_evening'];
+    for (const k of slots) {
+      const m = +$(k)?.value || 0;
+      if (m > 0) { total += m; sessions++; }
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  $('timeSummary').innerHTML = `<b>${sessions}</b> sessions · <b>${(total/60).toFixed(1)}h</b> total study time`;
 }
 
-/* ---------- Plan generation ---------- */
+/* =========================================================
+   Validation
+========================================================= */
+function validate() {
+  const errs = [];
+  const s = $('startDate').value, e = $('endDate').value;
+  if (!s || !e) errs.push('Pick a start and end date.');
+  else if (new Date(e) < new Date(s)) errs.push('End date must be on or after start date.');
+  if (!state.subjects.length) errs.push('Add at least one subject.');
+  state.subjects.forEach((sub, i) => {
+    if (!sub.name?.trim()) errs.push(`Subject ${i + 1} has no name.`);
+    if (!sub.topics.length) errs.push(`"${sub.name || 'subject ' + (i + 1)}" has no topics.`);
+    sub.topics.forEach((t, j) => {
+      if (+t.endPage < +t.startPage) errs.push(`"${sub.name}" · ${t.name}: end page < start page.`);
+    });
+  });
+  const totalMins = SLOT_KEYS.reduce((a, k) => a + (+state.slots[k] || 0), 0);
+  if (totalMins === 0) errs.push('At least one time slot must be greater than 0.');
+  return errs;
+}
+
+/* =========================================================
+   Plan generation
+========================================================= */
 function buildSessions(start, end) {
-  const slots = {
-    weekday: [
-      { name: 'Afternoon', mins: +$('wd_afternoon').value || 0 },
-      { name: 'Evening',   mins: +$('wd_evening').value   || 0 },
-    ],
-    saturday: [
-      { name: 'Morning',     mins: +$('sat_morning').value || 0 },
-      { name: 'Afternoon 1', mins: +$('sat_aft1').value    || 0 },
-      { name: 'Afternoon 2', mins: +$('sat_aft2').value    || 0 },
-      { name: 'Evening',     mins: +$('sat_evening').value || 0 },
-    ],
-    sunday: [
-      { name: 'Morning',     mins: +$('sun_morning').value || 0 },
-      { name: 'Afternoon 1', mins: +$('sun_aft1').value    || 0 },
-      { name: 'Afternoon 2', mins: +$('sun_aft2').value    || 0 },
-      { name: 'Evening',     mins: +$('sun_evening').value || 0 },
-    ],
+  const slotsByType = {
+    weekday:  [['Afternoon','wd_afternoon'],['Evening','wd_evening']],
+    saturday: [['Morning','sat_morning'],['Afternoon 1','sat_aft1'],['Afternoon 2','sat_aft2'],['Evening','sat_evening']],
+    sunday:   [['Morning','sun_morning'],['Afternoon 1','sun_aft1'],['Afternoon 2','sun_aft2'],['Evening','sun_evening']],
   };
   const sessions = [];
   const d = new Date(start);
   while (d <= end) {
     const t = dayType(d);
-    slots[t].forEach((s) => {
-      if (s.mins > 0) {
-        sessions.push({
-          date: new Date(d),
-          dayType: t,
-          slot: s.name,
-          mins: s.mins,
-          items: [],
-        });
-      }
-    });
+    for (const [name, key] of slotsByType[t]) {
+      const mins = +state.slots[key] || 0;
+      if (mins > 0) sessions.push({ date: new Date(d), dayType: t, slot: name, mins, items: [] });
+    }
     d.setDate(d.getDate() + 1);
   }
   return sessions;
 }
 
 function generate() {
-  const startVal = $('startDate').value;
-  const endVal = $('endDate').value;
-  if (!startVal || !endVal) return alert('Please pick a start and end date.');
-  const start = new Date(startVal + 'T00:00:00');
-  const end   = new Date(endVal + 'T00:00:00');
-  if (end < start) return alert('End date must be on or after start date.');
-  if (!subjects.length) return alert('Add at least one subject.');
+  const errs = validate();
+  renderErrors(errs);
+  if (errs.length) { renderEmptyOutput(errs); return; }
 
+  const start = new Date(state.startDate + 'T00:00:00');
+  const end   = new Date(state.endDate + 'T00:00:00');
   const sessions = buildSessions(start, end);
-  if (!sessions.length) return alert('No study sessions — all your time-slot values are 0.');
-
   const totalMins = sessions.reduce((a, s) => a + s.mins, 0);
-  const reviewPct = (+$('reviewPct').value) / 100;
-  const restLast = $('restLastDay').value === 'yes';
-
+  const reviewPct = state.reviewPct / 100;
+  const restLast  = state.restLastDay === 'yes';
   const firstPassMins = Math.round(totalMins * (1 - reviewPct));
 
-  // Build topic pool with target minutes per topic
+  // topic pool
   const topics = [];
-  subjects.forEach((s, si) => {
-    s.topics.forEach((t, ti) => {
-      const pages = Math.max(1, (t.endPage || 1) - (t.startPage || 1) + 1);
+  state.subjects.forEach((s, si) => {
+    s.topics.forEach((t) => {
+      const pages = Math.max(1, (+t.endPage || 1) - (+t.startPage || 1) + 1);
       topics.push({
-        subjectIdx: si,
-        subjectName: s.name,
-        topicName: t.name,
-        pages,
-        weight: s.weight,
-        rawWeight: pages * s.weight,
+        subjectIdx: si, subjectName: s.name,
+        topicName: t.name, topicId: t.id, subjectId: s.id,
+        pages, rawWeight: pages * (s.weight || 1),
         pageRange: `pg ${t.startPage}–${t.endPage}`,
-        key: `${s.name}__${t.name}`,
-        mins: 0,
-        sessions: [],
+        key: `${s.id || s.name}::${t.id || t.name}`,
+        mins: 0, sessions: [],
       });
     });
   });
-  const totalRaw = topics.reduce((a, t) => a + t.rawWeight, 0);
+  const totalRaw = topics.reduce((a, t) => a + t.rawWeight, 0) || 1;
   topics.forEach((t) => { t.mins = Math.max(15, Math.round(firstPassMins * t.rawWeight / totalRaw / 5) * 5); });
 
-  // Identify "last day sessions" we want to leave for rest
-  let firstPassSessions = sessions.slice();
-  let reviewSessions = [];
-  if (restLast && sessions.length > 2) {
-    const lastDate = sessions.at(-1).date.toDateString();
-    const prevDate = sessions.findLast && sessions.findLast((s) => s.date.toDateString() !== lastDate)?.date.toDateString();
-    firstPassSessions = sessions.filter((s) => s.date.toDateString() !== lastDate);
-    reviewSessions = sessions.filter((s) => s.date.toDateString() === lastDate);
+  // separate review sessions from first-pass sessions
+  let firstPass = sessions.slice();
+  let review = [];
+  if (restLast && sessions.length > 1) {
+    const last = sessions.at(-1).date.toDateString();
+    firstPass = sessions.filter((s) => s.date.toDateString() !== last);
+    review   = sessions.filter((s) => s.date.toDateString() === last);
+  }
+  // pull extra sessions off the tail if we still need review time
+  if (reviewPct > 0) {
+    const reviewTarget = totalMins * reviewPct;
+    while (firstPass.length && review.reduce((a, s) => a + s.mins, 0) < reviewTarget) {
+      review.unshift(firstPass.pop());
+    }
   }
 
-  // Split off review sessions by taking the tail equal to reviewPct of total minutes
-  if (!restLast) {
-    const reviewTarget = totalMins * reviewPct;
-    let acc = 0;
-    const rev = [];
-    while (firstPassSessions.length && acc < reviewTarget) {
-      rev.unshift(firstPassSessions.pop());
-      acc = rev.reduce((a, s) => a + s.mins, 0);
-    }
-    reviewSessions = rev;
-  } else if (reviewPct > 0) {
-    // additional review sessions taken from tail of firstPassSessions
-    const baseline = reviewSessions.reduce((a, s) => a + s.mins, 0);
-    const reviewTarget = totalMins * reviewPct;
-    let acc = baseline;
-    const rev = reviewSessions;
-    while (firstPassSessions.length && acc < reviewTarget) {
-      rev.unshift(firstPassSessions.pop());
-      acc = rev.reduce((a, s) => a + s.mins, 0);
-    }
-    reviewSessions = rev;
-  }
-
-  // Order topics: interleave subjects (round-robin) so the same subject doesn't stack
+  // round-robin topic queue
   const bySubj = {};
   topics.forEach((t) => { (bySubj[t.subjectIdx] = bySubj[t.subjectIdx] || []).push(t); });
-  const subjectQueues = Object.values(bySubj);
-  const orderedTopics = [];
-  while (subjectQueues.some((q) => q.length)) {
-    for (const q of subjectQueues) if (q.length) orderedTopics.push(q.shift());
-  }
+  const queues = Object.values(bySubj);
+  const ordered = [];
+  while (queues.some((q) => q.length)) for (const q of queues) if (q.length) ordered.push(q.shift());
 
-  // Pack topics into firstPassSessions greedily
-  let topicIdx = 0;
-  let remainingInTopic = orderedTopics[0]?.mins || 0;
-  for (const session of firstPassSessions) {
-    let sessionLeft = session.mins;
-    while (sessionLeft >= 15 && topicIdx < orderedTopics.length) {
-      const t = orderedTopics[topicIdx];
-      const take = Math.min(sessionLeft, remainingInTopic);
-      if (take < 15) { // if fragment too small, move to next topic
-        topicIdx++;
-        remainingInTopic = orderedTopics[topicIdx]?.mins || 0;
-        continue;
-      }
-      // Derive a page sub-range label for clarity
-      const pagesConsumed = t.sessions.reduce((a, s) => a + s.pagesShare, 0);
-      const pagesThisSession = Math.round(t.pages * (take / t.mins));
-      const startP = pagesConsumed ? (t.startPageBase || t.pageRange) : t.pageRange;
+  // pack into firstPass sessions
+  let ti = 0, remaining = ordered[0]?.mins || 0;
+  for (const session of firstPass) {
+    let left = session.mins;
+    while (left >= 15 && ti < ordered.length) {
+      const t = ordered[ti];
+      const take = Math.min(left, remaining);
+      if (take < 15) { ti++; remaining = ordered[ti]?.mins || 0; continue; }
+      const part = t.sessions.length + 1;
+      const isSplit = t.mins > session.mins;
       session.items.push({
-        kind: 'study',
-        subjectName: t.subjectName,
-        topicName: t.topicName,
-        pageRange: t.pageRange,
-        mins: take,
-        note: t.mins > session.mins
-          ? `${t.topicName} — part ${t.sessions.length + 1}`
-          : t.topicName,
+        kind: 'study', subjectName: t.subjectName, subjectIdx: t.subjectIdx,
+        topicName: t.topicName, pageRange: t.pageRange, mins: take,
+        note: isSplit ? `${t.topicName} — part ${part}` : t.topicName, key: t.key,
       });
-      t.sessions.push({ session, mins: take, pagesShare: pagesThisSession });
-      sessionLeft -= take;
-      remainingInTopic -= take;
-      if (remainingInTopic <= 0) {
-        topicIdx++;
-        remainingInTopic = orderedTopics[topicIdx]?.mins || 0;
-      }
+      t.sessions.push(session);
+      left -= take; remaining -= take;
+      if (remaining <= 0) { ti++; remaining = ordered[ti]?.mins || 0; }
     }
-    // If still time left in the session, fill with short review of covered topics
-    if (sessionLeft >= 15) {
-      session.items.push({ kind: 'buffer', mins: sessionLeft, note: 'Review & self-quiz on what you just studied' });
-    }
+    if (left >= 15) session.items.push({ kind: 'buffer', mins: left, note: 'Review & self-quiz on what you just studied' });
   }
 
-  // Populate review sessions
-  const subjectsOrdered = subjects.map((s, i) => ({
-    idx: i, name: s.name,
-    totalMins: topics.filter((t) => t.subjectIdx === i).reduce((a, t) => a + t.mins, 0),
-  })).sort((a, b) => b.totalMins - a.totalMins);
-
-  reviewSessions.forEach((session, i) => {
-    // First review session: mock quiz mix; last: flashcards / light; middle: per subject
-    const isLast = i === reviewSessions.length - 1;
+  // populate review sessions
+  const subjectOrder = state.subjects.map((s, i) => ({ idx: i, name: s.name, mins: topics.filter((t) => t.subjectIdx === i).reduce((a, t) => a + t.mins, 0) })).sort((a, b) => b.mins - a.mins);
+  review.forEach((session, i) => {
+    const isLast  = i === review.length - 1;
     const isFirst = i === 0;
-    if (reviewSessions.length >= 2 && isLast) {
-      session.items.push({ kind: 'review', mins: session.mins, subjectName: 'Light review', topicName: '', pageRange: '', note: 'Flashcards, formula sheet, and your weakest subject — then sleep early' });
-    } else if (reviewSessions.length >= 3 && isFirst) {
-      session.items.push({ kind: 'review', mins: session.mins, subjectName: 'Mock quiz', topicName: '', pageRange: '', note: 'Mixed short questions across all subjects' });
+    if (review.length >= 2 && isLast) {
+      session.items.push({ kind: 'review', mins: session.mins, subjectName: 'Light review', subjectIdx: -1, topicName: '', pageRange: '', note: 'Flashcards, formula sheet, weakest subject — then sleep early' });
+    } else if (review.length >= 3 && isFirst) {
+      session.items.push({ kind: 'review', mins: session.mins, subjectName: 'Mock quiz', subjectIdx: -1, topicName: '', pageRange: '', note: 'Mixed short questions across all subjects' });
     } else {
-      // rotate through subjects by weight
-      const s = subjectsOrdered[i % subjectsOrdered.length];
-      session.items.push({ kind: 'review', mins: session.mins, subjectName: s.name, topicName: 'Full review', pageRange: '', note: `Re-read key notes and do practice for ${s.name}` });
+      const s = subjectOrder[i % subjectOrder.length];
+      session.items.push({ kind: 'review', mins: session.mins, subjectName: s.name, subjectIdx: s.idx, topicName: 'Full review', pageRange: '', note: `Re-read notes and practice ${s.name}` });
     }
   });
 
-  render(sessions, totalMins, firstPassMins, totalMins - firstPassMins, subjects, topics);
-  $('print').disabled = false;
+  renderPlan(sessions, totalMins, topics);
 }
 
-/* ---------- Rendering ---------- */
-function render(sessions, totalMins, firstPassMins, reviewMins, subjects, topics) {
+/* =========================================================
+   Output rendering
+========================================================= */
+function renderErrors(errs) {
+  /* inline errors are shown inside the empty-output block when they exist */
+}
+function renderEmptyOutput(errs) {
   const out = $('output');
-  const days = [...new Set(sessions.map((s) => s.date.toDateString()))].length;
-  const topicCount = topics.length;
+  out.innerHTML = errs.length
+    ? `<div class="errors"><b>Please fix to see your plan:</b><ul>${errs.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></div>
+       <div class="output-empty">Your schedule will appear here once the form is valid.</div>`
+    : `<div class="output-empty">Fill in the form — your schedule appears here automatically.</div>`;
+}
+
+function renderPlan(sessions, totalMins, topics) {
+  const out = $('output');
+  const days = new Set(sessions.map((s) => s.date.toDateString())).size;
+
+  const subjStyle = (i) => {
+    const c = colorFor(i);
+    return `--subj-bg:${c.bg};--subj-ink:${c.ink};--subj-color:${c.h};`;
+  };
+
+  // progress
+  const doneCount = topics.filter((t) => doneMap[t.key]).length;
+  const pct = topics.length ? Math.round(100 * doneCount / topics.length) : 0;
 
   const statStrip = `
     <div class="stats-strip">
-      <div class="stat"><div class="val">${(totalMins/60).toFixed(1)}h</div><div class="lab">Total study time</div></div>
+      <div class="stat"><div class="val">${(totalMins/60).toFixed(1)}h</div><div class="lab">Total time</div></div>
       <div class="stat"><div class="val">${days}</div><div class="lab">Days</div></div>
-      <div class="stat"><div class="val">${subjects.length}</div><div class="lab">Subjects</div></div>
-      <div class="stat"><div class="val">${topicCount}</div><div class="lab">Topics</div></div>
+      <div class="stat"><div class="val">${state.subjects.length}</div><div class="lab">Subjects</div></div>
+      <div class="stat"><div class="val">${topics.length}</div><div class="lab">Topics</div></div>
+      <div class="stat"><div class="val">${sessions.length}</div><div class="lab">Sessions</div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="top">
+        <span class="label">Progress</span>
+        <span class="count">${doneCount} / ${topics.length} topics</span>
+      </div>
+      <div class="progress-bar"><div style="width:${pct}%"></div></div>
     </div>
   `;
 
-  // Subject allocation table
-  const allocRows = subjects.map((s, i) => {
-    const subjTopics = topics.filter((t) => t.subjectIdx === i);
-    const mins = subjTopics.reduce((a, t) => a + t.mins, 0);
-    const pages = subjTopics.reduce((a, t) => a + t.pages, 0);
-    return `<tr><td class="subj">${escapeHtml(s.name)}</td><td>${subjTopics.length}</td><td>${pages}</td><td>${(mins/60).toFixed(1)}h</td></tr>`;
+  // subject allocation
+  const allocRows = state.subjects.map((s, i) => {
+    const subT = topics.filter((t) => t.subjectIdx === i);
+    const mins  = subT.reduce((a, t) => a + t.mins, 0);
+    const pages = subT.reduce((a, t) => a + t.pages, 0);
+    return `<tr>
+      <td class="subj"><span class="subj-chip" style="${subjStyle(i)}">${esc(s.name)}</span></td>
+      <td>${subT.length}</td><td>${pages}</td>
+      <td style="font-variant-numeric:tabular-nums">${(mins/60).toFixed(1)}h</td>
+      <td style="font-variant-numeric:tabular-nums;color:var(--muted)">${Math.round(100 * mins / totalMins)}%</td>
+    </tr>`;
   }).join('');
-  const allocTable = `
+
+  const alloc = `
     <h2 class="section">Subject allocation</h2>
     <table class="plan">
-      <thead><tr><th>Subject</th><th>Topics</th><th>Pages</th><th>Time</th></tr></thead>
-      <tbody>
-        ${allocRows}
-        <tr><td class="subj" style="color:var(--muted)">Review / mock</td><td>—</td><td>—</td><td>${(reviewMins/60).toFixed(1)}h</td></tr>
-      </tbody>
+      <thead><tr><th>Subject</th><th>Topics</th><th>Pages</th><th>Time</th><th>Share</th></tr></thead>
+      <tbody>${allocRows}</tbody>
     </table>
   `;
 
-  // Group sessions by date
+  // day cards
   const byDate = new Map();
   sessions.forEach((s) => {
     const k = s.date.toDateString();
@@ -717,88 +1029,231 @@ function render(sessions, totalMins, firstPassMins, reviewMins, subjects, topics
   const daysHtml = [...byDate.values()].map((d) => {
     const total = d.sessions.reduce((a, s) => a + s.mins, 0);
     const rows = d.sessions.map((s) => {
+      const first = s.items[0];
+      const subjIdx = first ? first.subjectIdx : -1;
+      const subjChip = subjIdx >= 0
+        ? `<span class="subj-chip" style="${subjStyle(subjIdx)}">${esc(first.subjectName)}</span>`
+        : first ? `<span style="color:var(--muted)">${esc(first.subjectName)}</span>` : '';
       const itemsHtml = s.items.map((it) => {
-        if (it.kind === 'study') {
-          return `${escapeHtml(it.note)} <span style="color:var(--muted)">· ${escapeHtml(it.pageRange)} · ${mmss(it.mins)}</span>`;
-        } else if (it.kind === 'review') {
-          return `${escapeHtml(it.topicName ? it.topicName : it.subjectName)} <span style="color:var(--muted)">· ${escapeHtml(it.note)} · ${mmss(it.mins)}</span>`;
-        } else {
-          return `<span style="color:var(--muted)">${escapeHtml(it.note)} · ${mmss(it.mins)}</span>`;
-        }
+        if (it.kind === 'study')
+          return `${esc(it.note)} <span style="color:var(--muted)">· ${esc(it.pageRange)} · ${mmssShort(it.mins)}</span>`;
+        if (it.kind === 'review')
+          return `<b>${esc(it.topicName || it.subjectName)}</b> <span style="color:var(--muted)">· ${esc(it.note)} · ${mmssShort(it.mins)}</span>`;
+        return `<span style="color:var(--muted)">${esc(it.note)} · ${mmssShort(it.mins)}</span>`;
       }).join('<br />');
-      const subj = s.items[0]?.kind === 'study'
-        ? s.items[0].subjectName
-        : (s.items[0]?.subjectName || 'Review');
       return `<tr>
-        <td class="when">${escapeHtml(s.slot)} · ${mmss(s.mins)}</td>
-        <td class="subj">${escapeHtml(subj)}</td>
+        <td class="when">${esc(s.slot)} · ${mmssShort(s.mins)}</td>
+        <td class="subj">${subjChip}</td>
         <td>${itemsHtml || '<span style="color:var(--muted)">—</span>'}</td>
       </tr>`;
     }).join('');
     return `
-      <div class="day-title">
-        <span class="date">${fmt(d.date)}</span>
-        <span class="tag">${dayTypeLabel(dayType(d.date))}</span>
-        <span class="total">${(total/60).toFixed(1)}h total</span>
-      </div>
-      <table class="plan">
-        <thead><tr><th style="width:140px">Session</th><th style="width:140px">Subject</th><th>What to do</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    `;
+      <div class="day-card">
+        <div class="day-head">
+          <span class="date">${esc(fmtLong(d.date))}</span>
+          <span class="tag">${esc(dayTypeLabel(dayType(d.date)))}</span>
+          <span class="total">${(total/60).toFixed(1)}h · ${d.sessions.length} sessions</span>
+        </div>
+        <table class="plan"><thead><tr><th style="width:140px">Session</th><th style="width:140px">Subject</th><th>What to do</th></tr></thead><tbody>${rows}</tbody></table>
+      </div>`;
   }).join('');
 
-  // Coverage by subject
-  const coverageHtml = subjects.map((s, i) => {
-    const subjTopics = topics.filter((t) => t.subjectIdx === i);
-    const items = subjTopics.map((t) => {
-      const firstSession = t.sessions[0]?.session;
-      const lastSession = t.sessions.at(-1)?.session;
-      const when = firstSession
-        ? (firstSession.date.toDateString() === lastSession.date.toDateString()
-            ? fmtShort(firstSession.date)
-            : `${fmtShort(firstSession.date)} → ${fmtShort(lastSession.date)}`)
+  // coverage checklist (interactive)
+  const covHtml = state.subjects.map((s, i) => {
+    const subT = topics.filter((t) => t.subjectIdx === i);
+    const dn = subT.filter((t) => doneMap[t.key]).length;
+    const items = subT.map((t) => {
+      const first = t.sessions[0];
+      const last  = t.sessions.at(-1);
+      const when = first
+        ? (first.date.toDateString() === last.date.toDateString()
+            ? fmtShort(first.date)
+            : `${fmtShort(first.date)} → ${fmtShort(last.date)}`)
         : '—';
-      return `<li><span><span class="box">☐</span>${escapeHtml(t.topicName)} <span style="color:var(--muted)">· ${escapeHtml(t.pageRange)}</span></span><span class="when">${escapeHtml(when)}</span></li>`;
+      return `<li class="${doneMap[t.key] ? 'done' : ''}" data-done="${esc(t.key)}">
+        <span class="box"></span>
+        <span class="topic">${esc(t.topicName)} <span style="color:var(--muted)">· ${esc(t.pageRange)}</span></span>
+        <span class="when">${esc(when)}</span>
+      </li>`;
     }).join('');
     return `
-      <div class="cov-card">
-        <h4>${escapeHtml(s.name)} · ${subjTopics.length} topics</h4>
-        <ul>${items}</ul>
+      <div class="cov-card" style="${subjStyle(i)}">
+        <h4><span class="subj-chip" style="${subjStyle(i)}">${esc(s.name)}</span>
+            <span class="count">${dn} / ${subT.length}</span></h4>
+        <ul class="cov-list">${items}</ul>
       </div>`;
   }).join('');
 
   out.innerHTML = `
     ${statStrip}
-    ${allocTable}
-    <h2 class="section">Day-by-day schedule</h2>
+    ${alloc}
+    <h2 class="section">Day-by-day schedule <span class="hint">Click any topic in the checklist below to tick it off.</span></h2>
     ${daysHtml}
     <h2 class="section">Coverage checklist</h2>
-    <div class="coverage-grid">${coverageHtml}</div>
-    <p style="color:var(--muted); font-size:12px; margin: 20px 0 40px;">
-      Tip: tick each topic (☐ → ☑) as you finish. Review sessions at the end let you patch weak spots.
-    </p>
+    <div class="coverage-grid">${covHtml}</div>
+    <p style="color:var(--muted); font-size:12px; margin: 16px 0 40px;">Progress is saved in your browser.</p>
   `;
-  out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // checklist interactions
+  out.querySelectorAll('[data-done]').forEach((li) => {
+    li.addEventListener('click', () => {
+      const k = li.dataset.done;
+      doneMap[k] = !doneMap[k];
+      saveDone();
+      li.classList.toggle('done', !!doneMap[k]);
+      // Update counters
+      const card = li.closest('.cov-card');
+      const done = card.querySelectorAll('li.done').length;
+      const total = card.querySelectorAll('li').length;
+      card.querySelector('.count').textContent = `${done} / ${total}`;
+      const allDone  = document.querySelectorAll('#output li.done').length;
+      const allTotal = document.querySelectorAll('#output .cov-list li').length;
+      const bar = document.querySelector('.progress-bar > div');
+      const count = document.querySelector('.progress-wrap .count');
+      if (bar) bar.style.width = `${Math.round(100 * allDone / allTotal)}%`;
+      if (count) count.textContent = `${allDone} / ${allTotal} topics`;
+    });
+  });
 }
 
-/* ---------- Wire up ---------- */
-$('addSubject').addEventListener('click', () => {
-  subjects.push(DEFAULT_SUBJECT());
+/* =========================================================
+   Change pipeline
+========================================================= */
+const debouncedGenerate = debounce(generate, 250);
+const debouncedSave     = debounce(saveState, 400);
+
+function onChange({ skipSubjectsRerender = false } = {}) {
+  updateDateSummary();
+  updateTimeSummary();
+  debouncedSave();
+  debouncedGenerate();
+}
+
+/* =========================================================
+   Presets, Import/Export, Sample, Reset
+========================================================= */
+function applyPreset(name) {
+  state.slots = { ...PRESETS[name] };
+  SLOT_KEYS.forEach((k) => { $(k).value = state.slots[k]; });
+  updateTimeSummary();
+  saveState();
+  debouncedGenerate();
+  toast(name === 'clear' ? 'All time slots cleared' : `Applied "${name}" preset`, 'ok');
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify({ ...state, _exported: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `study-plan-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Exported plan JSON', 'ok');
+}
+function importJSON() { $('fileInput').click(); }
+$('fileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const imported = JSON.parse(r.result);
+      state = { ...DEFAULT_STATE(), ...imported, slots: { ...PRESETS.standard, ...(imported.slots || {}) } };
+      (state.subjects || []).forEach((s) => { if (!s.id) s.id = uid(); (s.topics || []).forEach((t) => { if (!t.id) t.id = uid(); }); });
+      saveState();
+      renderAll();
+      toast('Imported plan', 'ok');
+    } catch (err) { toast('Invalid JSON file', 'err'); }
+  };
+  r.readAsText(file);
+  e.target.value = '';
+});
+
+function loadSample() {
+  state = {
+    startDate: todayISO(),
+    endDate:   addDaysISO(todayISO(), 15),
+    slots:     { ...PRESETS.standard },
+    reviewPct: 15,
+    restLastDay: 'yes',
+    dark: state.dark,
+    subjects: [
+      { id: uid(), name: 'Mathematics', weight: 1.6, topics: [
+        { id: uid(), name: 'Topic 1', startPage: 1,  endPage: 38 },
+        { id: uid(), name: 'Topic 2', startPage: 40, endPage: 75 },
+        { id: uid(), name: 'Topic 3', startPage: 77, endPage: 83 }]},
+      { id: uid(), name: 'Science', weight: 1.3, topics: [
+        { id: uid(), name: 'Topic 1', startPage: 1,  endPage: 10 },
+        { id: uid(), name: 'Topic 2', startPage: 11, endPage: 34 },
+        { id: uid(), name: 'Topic 3', startPage: 35, endPage: 52 },
+        { id: uid(), name: 'Topic 4', startPage: 53, endPage: 72 }]},
+      { id: uid(), name: 'History', weight: 1.3, topics: [
+        { id: uid(), name: 'Topic 1', startPage: 1,  endPage: 19 },
+        { id: uid(), name: 'Topic 2', startPage: 20, endPage: 33 },
+        { id: uid(), name: 'Topic 3', startPage: 34, endPage: 49 },
+        { id: uid(), name: 'Topic 4', startPage: 50, endPage: 75 }]},
+      { id: uid(), name: 'Chinese', weight: 1.0, topics: Array.from({ length: 8 }, (_, i) => ({
+        id: uid(), name: `Topic ${i+1}`,
+        startPage: [1,9,17,25,32,41,51,58][i], endPage: [8,16,24,31,40,50,57,64][i] })) },
+      { id: uid(), name: 'Malay', weight: 1.0, topics: [
+        { id: uid(), name: 'Topic 1', startPage: 1,  endPage: 21 },
+        { id: uid(), name: 'Topic 2', startPage: 22, endPage: 43 },
+        { id: uid(), name: 'Topic 3', startPage: 44, endPage: 63 }]},
+      { id: uid(), name: 'English', weight: 0.7, topics: [
+        { id: uid(), name: 'Topic 1', startPage: 1,  endPage: 21 },
+        { id: uid(), name: 'Topic 2', startPage: 22, endPage: 33 },
+        { id: uid(), name: 'Topic 3', startPage: 34, endPage: 36 }]},
+    ],
+  };
+  saveState();
+  renderAll();
+  toast('Sample plan loaded', 'ok');
+}
+
+function resetAll() {
+  if (!confirm('Clear all data and start fresh? Checklist progress will also be cleared.')) return;
+  state = DEFAULT_STATE();
+  doneMap = {};
+  saveState(); saveDone();
+  renderAll();
+  toast('Reset complete', 'ok');
+}
+
+/* =========================================================
+   Initial render & wiring
+========================================================= */
+function renderAll() {
+  renderDates();
+  renderSlots();
+  renderOptions();
   renderSubjects();
+  debouncedGenerate();
+}
+
+$('addSubject').addEventListener('click', () => {
+  state.subjects.push({ id: uid(), name: `Subject ${state.subjects.length + 1}`, weight: 1.0, topics: [{ id: uid(), name: 'Topic 1', startPage: 1, endPage: 10 }] });
+  renderSubjects(); onChange();
 });
 $('loadSample').addEventListener('click', loadSample);
-$('resetAll').addEventListener('click', () => {
-  subjects = [DEFAULT_SUBJECT()];
-  renderSubjects();
-  $('output').innerHTML = `<div class="output-empty">Fill in the form on the left, click <b>Generate plan</b>, and your schedule will appear here.</div>`;
-  $('print').disabled = true;
-});
-$('generate').addEventListener('click', generate);
+$('resetAll').addEventListener('click', resetAll);
+$('exportBtn').addEventListener('click', exportJSON);
+$('importBtn').addEventListener('click', importJSON);
 $('print').addEventListener('click', () => window.print());
+$('startDate').addEventListener('input', () => { state.startDate = $('startDate').value; onChange(); });
+$('endDate').addEventListener('input',   () => { state.endDate   = $('endDate').value;   onChange(); });
+document.getElementById('presets').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-preset]'); if (!b) return;
+  applyPreset(b.dataset.preset);
+});
 
-// Initial state — load sample so the user sees a working example
-loadSample();
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.target.matches('input, textarea, select')) return;
+  if (e.key === 'p' && (e.metaKey || e.ctrlKey)) return; // let browser print
+  if (e.key === '/') { e.preventDefault(); $('startDate').focus(); }
+});
+
+// First render
+renderAll();
 </script>
 </body>
 </html>
