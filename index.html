@@ -588,7 +588,11 @@
   .cov-list li.done .box { background: var(--success); border-color: var(--success); }
   .cov-list li.done .box::before { content: "\2713"; }
   .cov-list li.done .topic { color: var(--muted); text-decoration: line-through; }
+  .cov-list li.topic-done .topic { color: var(--muted); font-style: italic; }
+  .cov-list li.unscheduled { cursor: default; opacity: .6; }
+  .cov-list li.unscheduled .box { border-style: dashed; }
   .cov-list li .topic { flex: 1; min-width: 0; }
+  .cov-list li .topic .muted { color: var(--muted); }
   .cov-list li .when { color: var(--muted); white-space: nowrap; font-size: 11px; font-variant-numeric: tabular-nums; }
 
   /* Validation badge */
@@ -1144,14 +1148,17 @@ function generate() {
   const topics = [];
   state.subjects.forEach((s, si) => {
     s.topics.forEach((t) => {
-      const pages = Math.max(1, (+t.endPage || 1) - (+t.startPage || 1) + 1);
+      const startPage = Math.max(1, +t.startPage || 1);
+      const endPage   = Math.max(startPage, +t.endPage || startPage);
+      const pages = endPage - startPage + 1;
       topics.push({
         subjectIdx: si, subjectName: s.name,
         topicName: t.name, topicId: t.id, subjectId: s.id,
+        startPage, endPage,
         pages, rawWeight: pages * (s.weight || 1),
-        pageRange: `pg ${t.startPage}–${t.endPage}`,
+        pageRange: `pg ${startPage}–${endPage}`,
         key: `${s.id || s.name}::${t.id || t.name}`,
-        mins: 0, sessions: [],
+        mins: 0, sessions: [], items: [],
       });
     });
   });
@@ -1216,15 +1223,15 @@ function generate() {
   while (queues.some((q) => q.length)) for (const q of queues) if (q.length) ordered.push(q.shift());
 
   function pushStudy(session, topic, mins) {
-    const part = topic.sessions.length + 1;
-    const totalForTopic = topic.mins || mins;
-    const isSplit = totalForTopic > mins;
-    session.items.push({
+    const item = {
       kind: 'study', subjectName: topic.subjectName, subjectIdx: topic.subjectIdx,
       topicName: topic.topicName, pageRange: topic.pageRange, mins,
-      note: isSplit ? `${topic.topicName} — part ${part}` : topic.topicName, key: topic.key,
-    });
+      note: topic.topicName, key: topic.key, topicKey: topic.key,
+      date: session.date, slot: session.slot,
+    };
+    session.items.push(item);
     topic.sessions.push(session);
+    topic.items.push(item);
   }
 
   // pack into firstPass sessions
@@ -1277,6 +1284,54 @@ function generate() {
     } else {
       // Last-ditch: just tack it onto the session, even if it runs over time.
       pushStudy(candidate, t, MIN_BLOCK);
+    }
+  });
+
+  // Split each topic's page range across its sessions, proportional to minutes
+  // spent. Also assign a stable per-part key so the checklist can track each
+  // session individually.
+  topics.forEach((t) => {
+    if (!t.items.length) return;
+    const partCount  = t.items.length;
+    const totalMins  = t.items.reduce((a, it) => a + it.mins, 0) || 1;
+    const totalPages = Math.max(1, t.endPage - t.startPage + 1);
+    const isSplit    = partCount > 1;
+    let cursor = t.startPage;
+    t.items.forEach((item, idx) => {
+      const isLast = idx === partCount - 1;
+      let partPages;
+      if (totalPages >= partCount) {
+        partPages = isLast
+          ? Math.max(1, t.endPage - cursor + 1)
+          : Math.max(1, Math.round(item.mins / totalMins * totalPages));
+      } else {
+        // Fewer pages than parts — let later parts revisit earlier pages
+        // rather than produce empty ranges.
+        partPages = 1;
+      }
+      const partStart = cursor;
+      const partEnd   = isLast && totalPages >= partCount
+        ? t.endPage
+        : Math.min(t.endPage, partStart + partPages - 1);
+      item.pageRange  = partStart === partEnd ? `pg ${partStart}` : `pg ${partStart}–${partEnd}`;
+      item.partIndex  = idx;
+      item.partCount  = partCount;
+      item.itemKey    = `${t.key}::p${idx}`;
+      item.note       = isSplit
+        ? `${t.topicName} — part ${idx + 1} of ${partCount}`
+        : t.topicName;
+      // Advance cursor but keep it inside the topic's page range.
+      cursor = totalPages >= partCount ? partEnd + 1 : Math.min(t.endPage, partStart + 1);
+    });
+  });
+
+  // Migrate old topic-level done ticks onto the new per-part keys so a user's
+  // existing progress survives splits.
+  topics.forEach((t) => {
+    if (!t.items.length) return;
+    if (doneMap[t.key]) {
+      t.items.forEach((it) => { doneMap[it.itemKey] = true; });
+      delete doneMap[t.key];
     }
   });
 
@@ -1353,8 +1408,9 @@ function renderPlan(sessions, totalMins, topics) {
     return `--subj-bg:${c.bg};--subj-ink:${c.ink};--subj-color:${c.h};`;
   };
 
-  // progress
-  const doneCount = topics.filter((t) => doneMap[t.key]).length;
+  // progress: a topic is "done" only when every one of its session-parts is ticked
+  const isTopicDone = (t) => t.items.length > 0 && t.items.every((it) => doneMap[it.itemKey]);
+  const doneCount = topics.filter(isTopicDone).length;
   const pct = topics.length ? Math.round(100 * doneCount / topics.length) : 0;
 
   const statStrip = `
@@ -1435,28 +1491,35 @@ function renderPlan(sessions, totalMins, topics) {
       </div>`;
   }).join('');
 
-  // coverage checklist (interactive)
+  // coverage checklist (interactive) — one row per session-part
   const covHtml = state.subjects.map((s, i) => {
     const subT = topics.filter((t) => t.subjectIdx === i);
-    const dn = subT.filter((t) => doneMap[t.key]).length;
+    const dn = subT.filter(isTopicDone).length;
     const items = subT.map((t) => {
-      const first = t.sessions[0];
-      const last  = t.sessions.at(-1);
-      const when = first
-        ? (first.date.toDateString() === last.date.toDateString()
-            ? fmtShort(first.date)
-            : `${fmtShort(first.date)} → ${fmtShort(last.date)}`)
-        : '—';
-      return `<li class="${doneMap[t.key] ? 'done' : ''}" data-done="${esc(t.key)}">
-        <span class="box"></span>
-        <span class="topic">${esc(t.topicName)} <span style="color:var(--muted)">· ${esc(t.pageRange)}</span></span>
-        <span class="when">${esc(when)}</span>
-      </li>`;
+      if (!t.items.length) {
+        return `<li class="unscheduled" data-topic="${esc(t.key)}">
+          <span class="box"></span>
+          <span class="topic">${esc(t.topicName)} <span class="muted">· ${esc(t.pageRange)}</span></span>
+          <span class="when">—</span>
+        </li>`;
+      }
+      const topicDone = isTopicDone(t);
+      return t.items.map((item) => {
+        const partDone = !!doneMap[item.itemKey];
+        const label = t.items.length > 1
+          ? `${esc(t.topicName)} <span class="muted">— part ${item.partIndex + 1} of ${item.partCount}</span>`
+          : esc(t.topicName);
+        return `<li class="${partDone ? 'done' : ''}${topicDone ? ' topic-done' : ''}" data-done="${esc(item.itemKey)}" data-topic="${esc(t.key)}">
+          <span class="box"></span>
+          <span class="topic">${label} <span class="muted">· ${esc(item.pageRange)} · ${mmssShort(item.mins)}</span></span>
+          <span class="when">${esc(fmtShort(item.date))}</span>
+        </li>`;
+      }).join('');
     }).join('');
     return `
-      <div class="cov-card" style="${subjStyle(i)}">
+      <div class="cov-card" style="${subjStyle(i)}" data-subject-idx="${i}">
         <h4><span class="subj-chip" style="${subjStyle(i)}">${esc(s.name)}</span>
-            <span class="count">${dn} / ${subT.length}</span></h4>
+            <span class="count">${dn} / ${subT.length} topics</span></h4>
         <ul class="cov-list">${items}</ul>
       </div>`;
   }).join('');
@@ -1477,7 +1540,36 @@ function renderPlan(sessions, totalMins, topics) {
 
   updateTabCounts(sessions.length, topics.length, doneCount);
 
-  // checklist interactions (on the progress view)
+  // Re-aggregate subject "X topics" counts and the overall progress
+  // stat whenever a session-part is ticked. Topic-level counts only
+  // treat a topic as done when every one of its parts is done.
+  const refreshCounts = () => {
+    let overallDone = 0;
+    progEl.querySelectorAll('.cov-card').forEach((card) => {
+      const i = +card.dataset.subjectIdx;
+      const subT = topics.filter((t) => t.subjectIdx === i);
+      const dn = subT.filter(isTopicDone).length;
+      card.querySelector('.count').textContent = `${dn} / ${subT.length} topics`;
+      // Apply the topic-level strike-through across every part in the topic.
+      subT.forEach((t) => {
+        const topicDone = isTopicDone(t);
+        card.querySelectorAll(`li[data-topic="${t.key}"]`).forEach((li) => {
+          li.classList.toggle('topic-done', topicDone);
+        });
+      });
+      overallDone += dn;
+    });
+    const allTotal = topics.length;
+    document.querySelectorAll('.progress-bar > div').forEach((bar) => {
+      bar.style.width = `${allTotal ? Math.round(100 * overallDone / allTotal) : 0}%`;
+    });
+    document.querySelectorAll('.progress-wrap .count').forEach((c) => {
+      c.textContent = `${overallDone} / ${allTotal} topics`;
+    });
+    updateTabCounts(sessions.length, allTotal, overallDone);
+  };
+
+  // checklist interactions (on the progress view) — toggle per-part state
   progEl.querySelectorAll('[data-done]').forEach((li) => {
     li.addEventListener('click', () => {
       const k = li.dataset.done;
@@ -1485,21 +1577,7 @@ function renderPlan(sessions, totalMins, topics) {
       saveDone();
       markSaved();
       li.classList.toggle('done', !!doneMap[k]);
-      // Update counters
-      const card = li.closest('.cov-card');
-      const done = card.querySelectorAll('li.done').length;
-      const total = card.querySelectorAll('li').length;
-      card.querySelector('.count').textContent = `${done} / ${total}`;
-      const allDone  = progEl.querySelectorAll('li.done').length;
-      const allTotal = progEl.querySelectorAll('.cov-list li').length;
-      // Update progress bar (appears in both plan and progress views' stat strips)
-      document.querySelectorAll('.progress-bar > div').forEach((bar) => {
-        bar.style.width = `${Math.round(100 * allDone / allTotal)}%`;
-      });
-      document.querySelectorAll('.progress-wrap .count').forEach((c) => {
-        c.textContent = `${allDone} / ${allTotal} topics`;
-      });
-      updateTabCounts(sessions.length, allTotal, allDone);
+      refreshCounts();
     });
   });
 }
