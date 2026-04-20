@@ -1,28 +1,22 @@
 rules_version = '2';
 
+// NOTE ON EMAILS
+// --------------
+// `request.auth.token.email` is used directly (without `.lower()`) because
+// Firestore's static query-safety analyzer rejects list queries whose rule
+// condition contains computed values. Google Sign-in always returns gmail
+// addresses in all-lowercase, and the client normalises any invited email
+// to lowercase before writing it into `memberEmails`, so the two values
+// align. Do not re-introduce `.lower()` here or the `plans` list query
+// will be denied with "Missing or insufficient permissions".
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helpers
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    function userEmail() {
-      return request.auth.token.email.lower();
-    }
-    function isMember(planData) {
-      return isSignedIn()
-        && planData.memberEmails is list
-        && userEmail() in planData.memberEmails;
-    }
-    function isOwner(planData) {
-      return isSignedIn() && request.auth.uid == planData.ownerUid;
-    }
 
     // ------------------------------------------------------------------
     // plans/{planId}
     //   ownerUid:      string   UID of creator
-    //   ownerEmail:    string   email of creator (lowercased)
+    //   ownerEmail:    string   email of creator (lowercased by client)
     //   name:          string   display name
     //   memberEmails:  list     lowercased emails allowed to read/write
     //   state:         map      app state (subjects, slots, dates, options)
@@ -32,42 +26,47 @@ service cloud.firestore {
     // ------------------------------------------------------------------
     match /plans/{planId} {
 
-      // Read: must be listed on the plan.
-      allow read: if isMember(resource.data);
+      // READ (get + list): signed-in user's email must be on the plan.
+      allow read: if request.auth != null
+                  && request.auth.token.email != null
+                  && request.auth.token.email in resource.data.memberEmails;
 
-      // Create: must be signed in, must be the owner, and must be on the
-      // memberEmails list themselves.
-      allow create: if isSignedIn()
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.ownerEmail == userEmail()
-        && request.resource.data.memberEmails is list
-        && userEmail() in request.resource.data.memberEmails
-        && request.resource.data.name is string
-        && request.resource.data.name.size() <= 120;
+      // CREATE: the creator must be signed in, must be the owner, must include
+      // themselves in memberEmails, and must use a reasonable name.
+      allow create: if request.auth != null
+                    && request.auth.token.email != null
+                    && request.resource.data.ownerUid   == request.auth.uid
+                    && request.resource.data.ownerEmail == request.auth.token.email
+                    && request.resource.data.memberEmails is list
+                    && request.auth.token.email in request.resource.data.memberEmails
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() <= 120;
 
-      // Update:
+      // UPDATE:
       //   - any current member may edit `state`, `done`, `updatedAt`, `name`
       //   - only the owner may change `memberEmails`, `ownerUid`, `ownerEmail`
-      allow update: if isMember(resource.data)
-        && (
-          // Non-owner members cannot touch ownership / membership fields.
-          isOwner(resource.data) ||
-          (
-            request.resource.data.ownerUid == resource.data.ownerUid &&
-            request.resource.data.ownerEmail == resource.data.ownerEmail &&
-            request.resource.data.memberEmails == resource.data.memberEmails
-          )
-        );
+      allow update: if request.auth != null
+                    && request.auth.token.email != null
+                    && request.auth.token.email in resource.data.memberEmails
+                    && (
+                      request.auth.uid == resource.data.ownerUid ||
+                      (
+                        request.resource.data.ownerUid     == resource.data.ownerUid &&
+                        request.resource.data.ownerEmail   == resource.data.ownerEmail &&
+                        request.resource.data.memberEmails == resource.data.memberEmails
+                      )
+                    );
 
-      // Delete: owner only.
-      allow delete: if isOwner(resource.data);
+      // DELETE: owner only.
+      allow delete: if request.auth != null
+                    && request.auth.uid == resource.data.ownerUid;
     }
 
     // ------------------------------------------------------------------
     // users/{uid} — optional per-user profile (active plan, etc.)
     // ------------------------------------------------------------------
     match /users/{uid} {
-      allow read, write: if isSignedIn() && request.auth.uid == uid;
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
   }
 }

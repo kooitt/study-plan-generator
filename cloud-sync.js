@@ -97,7 +97,11 @@ if (!isConfigured) {
   });
 
   function startPlansListListener() {
-    const email = (currentUser.email || "").toLowerCase();
+    // Use the email exactly as Firebase Auth provides it (which for Google
+    // Sign-in is already lowercased). The Firestore rule compares against
+    // `request.auth.token.email` with no transformation, so these must match
+    // byte-for-byte — do NOT call .toLowerCase() on it here.
+    const email = currentUser.email || "";
     if (!email) return;
     const q = query(
       collection(db, "plans"),
@@ -154,7 +158,8 @@ if (!isConfigured) {
 
   async function createPlan(name, state, done) {
     if (!currentUser) throw new Error("Not signed in");
-    const email = currentUser.email.toLowerCase();
+    // Use email exactly as Firebase returns it; see note in the Firestore rule.
+    const email = currentUser.email;
     const ref = await addDoc(collection(db, "plans"), {
       ownerUid: currentUser.uid,
       ownerEmail: email,
