@@ -81,14 +81,55 @@
   header.page .actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
   /* ---------- Layout ---------- */
-  main {
-    display: grid;
-    grid-template-columns: minmax(360px, 460px) 1fr;
-    gap: 18px;
-    padding: 18px;
-    align-items: start;
+  nav.tabs {
+    display: flex; gap: 4px; padding: 0 18px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    position: sticky; top: 0; z-index: 50;
   }
-  @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+  nav.tabs .tab {
+    background: transparent; border: 0; padding: 12px 16px;
+    font-size: 14px; font-weight: 500; color: var(--muted);
+    cursor: pointer; position: relative;
+    display: inline-flex; align-items: center; gap: 8px;
+    border-radius: 0; border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  nav.tabs .tab .count-pill {
+    background: var(--panel-2); color: var(--muted); border: 1px solid var(--line);
+    border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  nav.tabs .tab:hover { color: var(--ink); }
+  nav.tabs .tab[aria-selected="true"] {
+    color: var(--accent-ink); border-bottom-color: var(--accent);
+  }
+  nav.tabs .tab[aria-selected="true"] .count-pill {
+    background: var(--accent-weak); color: var(--accent-ink); border-color: var(--accent-weak);
+  }
+  main {
+    padding: 18px;
+    max-width: 1280px; margin: 0 auto;
+  }
+  .view { display: none; }
+  body[data-view="plan"]     #view-plan     { display: block; }
+  body[data-view="progress"] #view-progress { display: block; }
+  body[data-view="settings"] #view-settings {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 18px; align-items: start;
+  }
+  @media (max-width: 720px) {
+    body[data-view="settings"] #view-settings { grid-template-columns: 1fr; }
+  }
+  .view-empty {
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius);
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--muted);
+    background: var(--panel);
+  }
+  .view-empty .btn { margin-top: 14px; }
 
   /* ---------- Panel ---------- */
   .panel {
@@ -329,15 +370,6 @@
   @media print { .cloud-bar { display: none !important; } }
 
   /* ---------- Output ---------- */
-  .output-empty {
-    border: 1px dashed var(--line-strong);
-    border-radius: var(--radius);
-    padding: 60px 20px;
-    text-align: center;
-    color: var(--muted);
-    background: var(--panel);
-  }
-
   .stats-strip {
     display: grid; grid-template-columns: repeat(5, 1fr);
     gap: 10px; margin-bottom: 16px;
@@ -469,8 +501,11 @@
   /* ---------- Print ---------- */
   @media print {
     body { background: #fff; }
-    header.page, .form-col, .actions, .progress-wrap { display: none !important; }
-    main { grid-template-columns: 1fr; padding: 0; gap: 0; }
+    header.page, .actions, .cloud-bar, nav.tabs, #view-settings { display: none !important; }
+    main { padding: 0; }
+    .view { display: block !important; }
+    #view-plan, #view-progress { display: block !important; }
+    #view-plan { break-after: page; }
     .panel, .stat, .cov-card, table.plan, .day-card { box-shadow: none !important; break-inside: avoid; }
     h2.section { break-after: avoid; }
     .day-card { break-inside: avoid; border-radius: 0; }
@@ -479,7 +514,7 @@
   }
 </style>
 </head>
-<body>
+<body data-view="plan">
   <header class="page">
     <div>
       <h1>Study Plan Generator</h1>
@@ -517,9 +552,23 @@
     </div>
   </div>
 
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-view="settings" aria-selected="false">
+      <span>Settings</span>
+    </button>
+    <button class="tab" role="tab" data-view="plan" aria-selected="true">
+      <span>Study Plan</span>
+      <span class="count-pill" id="tabPlanCount">—</span>
+    </button>
+    <button class="tab" role="tab" data-view="progress" aria-selected="false">
+      <span>Progress</span>
+      <span class="count-pill" id="tabProgressCount">—</span>
+    </button>
+  </nav>
+
   <main>
-    <!-- ----- FORM COLUMN ----- -->
-    <aside class="form-col">
+    <!-- ----- SETTINGS VIEW ----- -->
+    <section id="view-settings" class="view">
       <section class="panel">
         <h2><span class="num">1</span><span class="title">Dates</span></h2>
         <div class="row">
@@ -599,12 +648,25 @@
           </div>
         </div>
       </section>
-    </aside>
+    </section>
 
-    <!-- ----- OUTPUT COLUMN ----- -->
-    <section class="output-col">
-      <div id="output">
-        <div class="output-empty">Fill in the form — your schedule appears here automatically.</div>
+    <!-- ----- STUDY PLAN VIEW ----- -->
+    <section id="view-plan" class="view">
+      <div id="planView">
+        <div class="view-empty">
+          Fill in the form — your schedule appears here automatically.
+          <div><button class="btn primary" type="button" data-goto="settings">Open Settings</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ----- PROGRESS VIEW ----- -->
+    <section id="view-progress" class="view">
+      <div id="progressView">
+        <div class="view-empty">
+          Your topic checklist appears here once the plan is generated.
+          <div><button class="btn primary" type="button" data-goto="settings">Open Settings</button></div>
+        </div>
       </div>
     </section>
   </main>
@@ -618,6 +680,7 @@
 ========================================================= */
 const STORAGE_KEY = 'study-plan-generator/v2';
 const DONE_KEY    = 'study-plan-generator/v2/done';
+const VIEW_KEY    = 'study-plan-generator/v2/view';
 
 const COLORS = [
   { h: '#4f46e5', bg: '#eef2ff', ink: '#3730a3' },
@@ -1046,15 +1109,29 @@ function renderErrors(errs) {
   /* inline errors are shown inside the empty-output block when they exist */
 }
 function renderEmptyOutput(errs) {
-  const out = $('output');
-  out.innerHTML = errs.length
+  const emptyBlock = errs.length
     ? `<div class="errors"><b>Please fix to see your plan:</b><ul>${errs.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></div>
-       <div class="output-empty">Your schedule will appear here once the form is valid.</div>`
-    : `<div class="output-empty">Fill in the form — your schedule appears here automatically.</div>`;
+       <div class="view-empty">Your schedule will appear here once the form is valid.
+         <div><button class="btn primary" type="button" data-goto="settings">Open Settings</button></div>
+       </div>`
+    : `<div class="view-empty">Fill in the form — your schedule appears here automatically.
+         <div><button class="btn primary" type="button" data-goto="settings">Open Settings</button></div>
+       </div>`;
+  $('planView').innerHTML = emptyBlock;
+  $('progressView').innerHTML = emptyBlock;
+  updateTabCounts(0, 0, 0);
+}
+
+function updateTabCounts(sessionCount, topicsTotal, topicsDone) {
+  const planPill = $('tabPlanCount');
+  const progPill = $('tabProgressCount');
+  if (planPill) planPill.textContent = sessionCount ? `${sessionCount} sessions` : '—';
+  if (progPill) progPill.textContent = topicsTotal ? `${topicsDone} / ${topicsTotal}` : '—';
 }
 
 function renderPlan(sessions, totalMins, topics) {
-  const out = $('output');
+  const planEl = $('planView');
+  const progEl = $('progressView');
   const days = new Set(sessions.map((s) => s.date.toDateString())).size;
 
   const subjStyle = (i) => {
@@ -1169,12 +1246,16 @@ function renderPlan(sessions, totalMins, topics) {
       </div>`;
   }).join('');
 
-  out.innerHTML = `
+  planEl.innerHTML = `
     ${statStrip}
     ${alloc}
-    <h2 class="section">Day-by-day schedule <span class="hint">Click any topic in the checklist below to tick it off.</span></h2>
+    <h2 class="section">Day-by-day schedule <span class="hint">Tick topics off on the Progress tab.</span></h2>
     ${daysHtml}
-    <h2 class="section">Coverage checklist</h2>
+  `;
+
+  progEl.innerHTML = `
+    ${statStrip}
+    <h2 class="section">Coverage checklist <span class="hint">Click any topic to tick it off.</span></h2>
     <div class="coverage-grid">${covHtml}</div>
     <p style="color:var(--muted); font-size:12px; margin: 16px 0 40px; line-height:1.6;">
       Your ticks are saved automatically in this browser and will be there when you come back — even after you close the tab or restart your computer.<br />
@@ -1182,8 +1263,10 @@ function renderPlan(sessions, totalMins, topics) {
     </p>
   `;
 
-  // checklist interactions
-  out.querySelectorAll('[data-done]').forEach((li) => {
+  updateTabCounts(sessions.length, topics.length, doneCount);
+
+  // checklist interactions (on the progress view)
+  progEl.querySelectorAll('[data-done]').forEach((li) => {
     li.addEventListener('click', () => {
       const k = li.dataset.done;
       doneMap[k] = !doneMap[k];
@@ -1195,12 +1278,16 @@ function renderPlan(sessions, totalMins, topics) {
       const done = card.querySelectorAll('li.done').length;
       const total = card.querySelectorAll('li').length;
       card.querySelector('.count').textContent = `${done} / ${total}`;
-      const allDone  = document.querySelectorAll('#output li.done').length;
-      const allTotal = document.querySelectorAll('#output .cov-list li').length;
-      const bar = document.querySelector('.progress-bar > div');
-      const count = document.querySelector('.progress-wrap .count');
-      if (bar) bar.style.width = `${Math.round(100 * allDone / allTotal)}%`;
-      if (count) count.textContent = `${allDone} / ${allTotal} topics`;
+      const allDone  = progEl.querySelectorAll('li.done').length;
+      const allTotal = progEl.querySelectorAll('.cov-list li').length;
+      // Update progress bar (appears in both plan and progress views' stat strips)
+      document.querySelectorAll('.progress-bar > div').forEach((bar) => {
+        bar.style.width = `${Math.round(100 * allDone / allTotal)}%`;
+      });
+      document.querySelectorAll('.progress-wrap .count').forEach((c) => {
+        c.textContent = `${allDone} / ${allTotal} topics`;
+      });
+      updateTabCounts(sessions.length, allTotal, allDone);
     });
   });
 }
@@ -1348,11 +1435,48 @@ document.getElementById('presets').addEventListener('click', (e) => {
   applyPreset(b.dataset.preset);
 });
 
+/* =========================================================
+   Tabs / view switching
+========================================================= */
+function loadView() {
+  try { return localStorage.getItem(VIEW_KEY) || 'plan'; } catch (e) { return 'plan'; }
+}
+function setView(name, { save = true } = {}) {
+  const valid = ['settings', 'plan', 'progress'];
+  if (!valid.includes(name)) name = 'plan';
+  document.body.dataset.view = name;
+  document.querySelectorAll('nav.tabs .tab').forEach((t) => {
+    t.setAttribute('aria-selected', t.dataset.view === name ? 'true' : 'false');
+  });
+  if (save) {
+    try { localStorage.setItem(VIEW_KEY, name); } catch (e) {}
+  }
+  window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+}
+
+document.querySelectorAll('nav.tabs .tab').forEach((t) => {
+  t.addEventListener('click', () => setView(t.dataset.view));
+});
+
+// "Open Settings" buttons shown in empty states.
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-goto]');
+  if (!b) return;
+  setView(b.dataset.goto);
+});
+
+// Initial view: honour whatever was last active (stored separately from state
+// so it doesn't sync across devices via cloud).
+setView(loadView(), { save: false });
+
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input, textarea, select')) return;
   if (e.key === 'p' && (e.metaKey || e.ctrlKey)) return; // let browser print
-  if (e.key === '/') { e.preventDefault(); $('startDate').focus(); }
+  if (e.key === '/') { e.preventDefault(); setView('settings'); $('startDate').focus(); }
+  if (e.key === '1') { setView('settings'); }
+  if (e.key === '2') { setView('plan'); }
+  if (e.key === '3') { setView('progress'); }
 });
 
 // First render
