@@ -517,13 +517,29 @@
     font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700;
   }
   table.plan tr:last-child td { border-bottom: 0; }
-  table.plan td.when { color: var(--muted); width: 140px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.plan td.when { color: var(--muted); width: 160px; white-space: nowrap; font-variant-numeric: tabular-nums; }
   table.plan td.subj { width: 130px; }
+  table.plan td.what { padding: 6px 10px; }
+  table.plan td .muted { color: var(--muted); }
 
   .subj-chip {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
     background: var(--subj-bg); color: var(--subj-ink);
+    white-space: nowrap;
+  }
+  .subj-chip-muted { background: var(--chip-bg); color: var(--muted); font-weight: 500; }
+
+  .plan-item {
+    display: grid; grid-template-columns: 120px 1fr; align-items: baseline;
+    gap: 10px; padding: 4px 0; border-top: 1px dashed var(--line);
+  }
+  .plan-item:first-child { border-top: 0; padding-top: 0; }
+  .plan-item:last-child  { padding-bottom: 0; }
+  .plan-item .subj-chip { justify-self: start; }
+  .plan-item-text { line-height: 1.45; }
+  @media (max-width: 640px) {
+    .plan-item { grid-template-columns: 1fr; gap: 2px; padding: 6px 0; }
   }
 
   .day-card {
@@ -1389,22 +1405,23 @@ function renderPlan(sessions, totalMins, topics) {
   const daysHtml = [...byDate.values()].map((d) => {
     const total = d.sessions.reduce((a, s) => a + s.mins, 0);
     const rows = d.sessions.map((s) => {
-      const first = s.items[0];
-      const subjIdx = first ? first.subjectIdx : -1;
-      const subjChip = subjIdx >= 0
-        ? `<span class="subj-chip" style="${subjStyle(subjIdx)}">${esc(first.subjectName)}</span>`
-        : first ? `<span style="color:var(--muted)">${esc(first.subjectName)}</span>` : '';
       const itemsHtml = s.items.map((it) => {
+        const chip = it.subjectIdx >= 0
+          ? `<span class="subj-chip" style="${subjStyle(it.subjectIdx)}">${esc(it.subjectName)}</span>`
+          : `<span class="subj-chip subj-chip-muted">${esc(it.subjectName || 'Review')}</span>`;
         if (it.kind === 'study')
-          return `${esc(it.note)} <span style="color:var(--muted)">· ${esc(it.pageRange)} · ${mmssShort(it.mins)}</span>`;
+          return `<div class="plan-item">${chip}<span class="plan-item-text">${esc(it.note)} <span class="muted">· ${esc(it.pageRange)} · ${mmssShort(it.mins)}</span></span></div>`;
         if (it.kind === 'review')
-          return `<b>${esc(it.topicName || it.subjectName)}</b> <span style="color:var(--muted)">· ${esc(it.note)} · ${mmssShort(it.mins)}</span>`;
-        return `<span style="color:var(--muted)">${esc(it.note)} · ${mmssShort(it.mins)}</span>`;
-      }).join('<br />');
+          return `<div class="plan-item">${chip}<span class="plan-item-text"><b>${esc(it.topicName || it.subjectName)}</b> <span class="muted">· ${esc(it.note)} · ${mmssShort(it.mins)}</span></span></div>`;
+        return `<div class="plan-item"><span class="subj-chip subj-chip-muted">Buffer</span><span class="plan-item-text muted">${esc(it.note)} · ${mmssShort(it.mins)}</span></div>`;
+      }).join('');
+      const itemTotal = s.items.reduce((a, it) => a + (it.mins || 0), 0);
+      const slotLabel = itemTotal && itemTotal !== s.mins
+        ? `${esc(s.slot)} · ${mmssShort(itemTotal)} <span class="muted">/ ${mmssShort(s.mins)}</span>`
+        : `${esc(s.slot)} · ${mmssShort(s.mins)}`;
       return `<tr>
-        <td class="when">${esc(s.slot)} · ${mmssShort(s.mins)}</td>
-        <td class="subj">${subjChip}</td>
-        <td>${itemsHtml || '<span style="color:var(--muted)">—</span>'}</td>
+        <td class="when">${slotLabel}</td>
+        <td class="what">${itemsHtml || '<span class="muted">—</span>'}</td>
       </tr>`;
     }).join('');
     return `
@@ -1414,7 +1431,7 @@ function renderPlan(sessions, totalMins, topics) {
           <span class="tag">${esc(dayTypeLabel(dayType(d.date)))}</span>
           <span class="total">${(total/60).toFixed(1)}h · ${d.sessions.length} sessions</span>
         </div>
-        <table class="plan"><thead><tr><th style="width:140px">Session</th><th style="width:140px">Subject</th><th>What to do</th></tr></thead><tbody>${rows}</tbody></table>
+        <table class="plan"><thead><tr><th style="width:160px">Session</th><th>What to do</th></tr></thead><tbody>${rows}</tbody></table>
       </div>`;
   }).join('');
 
