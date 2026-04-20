@@ -24,7 +24,7 @@ https://<your-username>.github.io/<repo-name>/
 - **Weight slider** — 0.5× to 2× per subject, shown as a live multiplier.
 - **Live form summaries** — as you adjust dates or time slots, the form tells you "N sessions · X.Xh total study time".
 - **Inline validation** — bad input shows friendly warnings instead of a popup.
-- **Import / Export JSON** — save your plan, share it, or reload it later. Exports include checklist ticks so you can back up progress or move it between devices.
+- **Cloud sync** — sign in with Google (top-right of the tab bar) to save your plan and checklist to Firestore and keep them in sync across every device.
 - **Optional cloud sync** (Google Sign-in + Firebase) — turn it on and your plan + ticks follow you between phone / laptop / tablet, and you can share a plan with another user by email. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for the 10-minute one-time setup. Completely optional — the app works fully offline without it.
 - **Dark mode** — toggle in the header.
 - **Print / PDF** — a single click opens the browser print dialog with only the plan visible. Choose "Save as PDF" to export.
