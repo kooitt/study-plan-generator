@@ -1124,8 +1124,6 @@ function generate() {
   const totalMins = sessions.reduce((a, s) => a + s.mins, 0);
   const reviewPct = state.reviewPct / 100;
   const restLast  = state.restLastDay === 'yes';
-  const firstPassMins = Math.round(totalMins * (1 - reviewPct));
-
   // topic pool
   const topics = [];
   state.subjects.forEach((s, si) => {
@@ -1141,8 +1139,12 @@ function generate() {
       });
     });
   });
+  // Smallest study block we're willing to hand a topic. We keep it small so
+  // short slots (e.g. a 10-minute weekday afternoon) are still useful AND so
+  // tiny topics never get rounded up to eat the whole budget.
+  const MIN_BLOCK = 5;
+
   const totalRaw = topics.reduce((a, t) => a + t.rawWeight, 0) || 1;
-  topics.forEach((t) => { t.mins = Math.max(15, Math.round(firstPassMins * t.rawWeight / totalRaw / 5) * 5); });
 
   // separate review sessions from first-pass sessions
   let firstPass = sessions.slice();
@@ -1160,6 +1162,36 @@ function generate() {
     }
   }
 
+  // Actual budget available for first-pass study is the sum of firstPass
+  // session lengths (not firstPassMins, which was a rough estimate before we
+  // trimmed the tail for reviews).
+  const studyBudget = firstPass.reduce((a, s) => a + s.mins, 0);
+
+  // Allocate per-topic minutes proportional to weight, bounded below by
+  // MIN_BLOCK and scaled so the sum never exceeds the budget.
+  topics.forEach((t) => {
+    t.mins = Math.max(MIN_BLOCK, Math.round(studyBudget * t.rawWeight / totalRaw / 5) * 5);
+  });
+  let allocTotal = topics.reduce((a, t) => a + t.mins, 0);
+  // Shave 5 minutes off the longest topic repeatedly until we fit.
+  while (allocTotal > studyBudget) {
+    const biggest = topics.reduce((a, t) => (t.mins > a.mins ? t : a), topics[0]);
+    if (!biggest || biggest.mins <= MIN_BLOCK) break;
+    biggest.mins -= 5;
+    allocTotal -= 5;
+  }
+  // If we're underspent (rounding-down), hand the leftover minutes to
+  // whichever topics have the heaviest weight.
+  if (allocTotal < studyBudget && topics.length) {
+    const byWeight = [...topics].sort((a, b) => b.rawWeight - a.rawWeight);
+    let i = 0;
+    while (allocTotal + 5 <= studyBudget) {
+      byWeight[i % byWeight.length].mins += 5;
+      allocTotal += 5;
+      i++;
+    }
+  }
+
   // round-robin topic queue
   const bySubj = {};
   topics.forEach((t) => { (bySubj[t.subjectIdx] = bySubj[t.subjectIdx] || []).push(t); });
@@ -1167,27 +1199,70 @@ function generate() {
   const ordered = [];
   while (queues.some((q) => q.length)) for (const q of queues) if (q.length) ordered.push(q.shift());
 
+  function pushStudy(session, topic, mins) {
+    const part = topic.sessions.length + 1;
+    const totalForTopic = topic.mins || mins;
+    const isSplit = totalForTopic > mins;
+    session.items.push({
+      kind: 'study', subjectName: topic.subjectName, subjectIdx: topic.subjectIdx,
+      topicName: topic.topicName, pageRange: topic.pageRange, mins,
+      note: isSplit ? `${topic.topicName} — part ${part}` : topic.topicName, key: topic.key,
+    });
+    topic.sessions.push(session);
+  }
+
   // pack into firstPass sessions
   let ti = 0, remaining = ordered[0]?.mins || 0;
   for (const session of firstPass) {
     let left = session.mins;
-    while (left >= 15 && ti < ordered.length) {
+    while (left >= MIN_BLOCK && ti < ordered.length) {
       const t = ordered[ti];
-      const take = Math.min(left, remaining);
-      if (take < 15) { ti++; remaining = ordered[ti]?.mins || 0; continue; }
-      const part = t.sessions.length + 1;
-      const isSplit = t.mins > session.mins;
-      session.items.push({
-        kind: 'study', subjectName: t.subjectName, subjectIdx: t.subjectIdx,
-        topicName: t.topicName, pageRange: t.pageRange, mins: take,
-        note: isSplit ? `${t.topicName} — part ${part}` : t.topicName, key: t.key,
-      });
-      t.sessions.push(session);
-      left -= take; remaining -= take;
+      if (remaining <= 0) { ti++; remaining = ordered[ti]?.mins || 0; continue; }
+      // If the remainder is tiny, fold it into this block so we don't leave
+      // orphan scraps behind.
+      const take = (remaining < MIN_BLOCK) ? remaining : Math.min(left, remaining);
+      pushStudy(session, t, take);
+      left -= take;
+      remaining -= take;
       if (remaining <= 0) { ti++; remaining = ordered[ti]?.mins || 0; }
     }
-    if (left >= 15) session.items.push({ kind: 'buffer', mins: left, note: 'Review & self-quiz on what you just studied' });
+    if (left > 0) {
+      if (ti < ordered.length) {
+        // Anything shorter than MIN_BLOCK still goes to the current topic
+        // rather than becoming dead time.
+        const t = ordered[ti];
+        pushStudy(session, t, left);
+        remaining = Math.max(0, remaining - left);
+        if (remaining <= 0) { ti++; remaining = ordered[ti]?.mins || 0; }
+      } else if (left >= MIN_BLOCK) {
+        session.items.push({ kind: 'buffer', mins: left, note: 'Review & self-quiz on what you just studied' });
+      }
+    }
   }
+
+  // Safety net: guarantee every topic gets at least one slot. If the budget
+  // was really tight and a tail topic missed out, steal a block from the
+  // busiest session in the plan.
+  topics.forEach((t) => {
+    if (t.sessions.length > 0) return;
+    const candidate = firstPass
+      .slice()
+      .sort((a, b) => b.mins - a.mins)
+      .find((s) => s.items.some((it) => it.kind === 'study' && it.mins >= MIN_BLOCK * 2))
+      || firstPass[firstPass.length - 1];
+    if (!candidate) return;
+    const victim = [...candidate.items]
+      .filter((it) => it.kind === 'study')
+      .sort((a, b) => b.mins - a.mins)[0];
+    const take = Math.min(MIN_BLOCK, victim ? Math.floor(victim.mins / 2) : candidate.mins);
+    if (victim && take >= MIN_BLOCK) {
+      victim.mins -= take;
+      pushStudy(candidate, t, take);
+    } else {
+      // Last-ditch: just tack it onto the session, even if it runs over time.
+      pushStudy(candidate, t, MIN_BLOCK);
+    }
+  });
 
   // populate review sessions
   const subjectOrder = state.subjects.map((s, i) => ({ idx: i, name: s.name, mins: topics.filter((t) => t.subjectIdx === i).reduce((a, t) => a + t.mins, 0) })).sort((a, b) => b.mins - a.mins);
