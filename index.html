@@ -264,6 +264,69 @@
   }
   .save-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted-2); }
   .save-indicator.saved .dot { background: var(--success); }
+  .save-indicator.cloud .dot { background: var(--primary); }
+
+  /* ---------- Cloud / login bar ---------- */
+  .cloud-bar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 8px 12px; border: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border-radius: 10px; margin-bottom: 14px; font-size: 13px;
+  }
+  .cloud-bar.hidden { display: none; }
+  .cloud-bar .cloud-msg { color: var(--muted); flex: 1 1 auto; min-width: 0; }
+  .cloud-bar .cloud-msg b { color: var(--ink); }
+  .cloud-bar .avatar {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px;
+    flex-shrink: 0; overflow: hidden;
+  }
+  .cloud-bar .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .cloud-bar select.plan-picker {
+    max-width: 220px; padding: 6px 8px;
+  }
+  .cloud-bar .who { color: var(--ink); font-weight: 500; }
+  .cloud-bar .who small { color: var(--muted); font-weight: 400; margin-left: 4px; }
+  .btn.google {
+    background: #fff; color: #1f2937; border: 1px solid var(--line-strong);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  [data-theme="dark"] .btn.google { background: #fff; color: #1f2937; }
+  .btn.google .g {
+    display: inline-block; width: 16px; height: 16px; background:
+      conic-gradient(from 90deg, #4285F4 0 90deg, #34A853 90deg 180deg, #FBBC05 180deg 270deg, #EA4335 270deg 360deg);
+    border-radius: 50%;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 90;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-backdrop.hidden { display: none; }
+  .modal {
+    background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 14px; max-width: 440px; width: 100%; padding: 18px 20px; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  .modal h3 { margin: 0 0 6px; font-size: 16px; }
+  .modal p.hint { margin: 0 0 14px; font-size: 12px; color: var(--muted); }
+  .modal .row2 { display: flex; gap: 8px; align-items: center; }
+  .modal .row2 input { flex: 1; }
+  .modal .members {
+    margin-top: 12px; display: flex; flex-direction: column; gap: 6px;
+    max-height: 180px; overflow: auto;
+  }
+  .modal .member {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 6px 10px; background: var(--panel-2); border-radius: 8px; font-size: 13px;
+  }
+  .modal .member .role { font-size: 11px; color: var(--muted); }
+  .modal .member button {
+    background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1;
+  }
+  .modal .member button:hover { color: var(--danger); }
+  .modal .close-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  @media print { .cloud-bar { display: none !important; } }
 
   /* ---------- Output ---------- */
   .output-empty {
@@ -438,6 +501,22 @@
     </div>
   </header>
 
+  <div id="cloudBar" class="cloud-bar hidden" aria-live="polite">
+    <div id="cloudStatus" class="cloud-msg">Checking cloud sync…</div>
+    <div id="cloudActions" class="actions"></div>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal" id="modalBox">
+      <h3 id="modalTitle">Share plan</h3>
+      <p class="hint" id="modalHint">Enter a Google email to give them access. They'll see this plan after signing in with that email.</p>
+      <div id="modalBody"></div>
+      <div class="close-row">
+        <button class="btn" id="modalCancel" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
   <main>
     <!-- ----- FORM COLUMN ----- -->
     <aside class="form-col">
@@ -594,11 +673,17 @@ function loadState() {
     return { ...DEFAULT_STATE(), ...s, slots: { ...PRESETS.standard, ...(s.slots || {}) } };
   } catch (e) { return DEFAULT_STATE(); }
 }
-function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); markSaved(); } catch (e) {} }
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); markSaved(); } catch (e) {}
+  scheduleCloudSave();
+}
 function loadDone() {
   try { return JSON.parse(localStorage.getItem(DONE_KEY) || '{}'); } catch (e) { return {}; }
 }
-function saveDone() { try { localStorage.setItem(DONE_KEY, JSON.stringify(doneMap)); } catch (e) {} }
+function saveDone() {
+  try { localStorage.setItem(DONE_KEY, JSON.stringify(doneMap)); } catch (e) {}
+  scheduleCloudSave();
+}
 
 /* =========================================================
    Utility
@@ -1272,6 +1357,272 @@ document.addEventListener('keydown', (e) => {
 
 // First render
 renderAll();
+
+/* =========================================================
+   Cloud sync integration (Firebase) — optional.
+   Activates only when firebase-config.js is filled in and
+   cloud-sync.js has loaded successfully.
+========================================================= */
+let syncMode = 'local';          // 'local' | 'cloud'
+let applyingRemote = false;      // true while we're applying a snapshot from the server
+let lastLocalSignature = '';     // avoid echoing our own writes
+
+function planPayload() {
+  return { state: JSON.parse(JSON.stringify(state)), done: JSON.parse(JSON.stringify(doneMap)) };
+}
+function signatureFor(payload) {
+  try { return JSON.stringify(payload); } catch (e) { return String(Math.random()); }
+}
+
+const debouncedCloudSave = debounce(() => {
+  if (syncMode !== 'cloud' || applyingRemote) return;
+  if (!window.cloudSync || !window.cloudSync.enabled) return;
+  if (!window.cloudSync.currentUser() || !window.cloudSync.currentPlanId()) return;
+  const payload = planPayload();
+  const sig = signatureFor(payload);
+  if (sig === lastLocalSignature) return;
+  lastLocalSignature = sig;
+  const el = $('saveIndicator');
+  if (el) {
+    el.classList.add('cloud');
+    el.querySelector('.txt').textContent = 'Syncing…';
+  }
+  window.cloudSync.savePlan(payload.state, payload.done).then(() => {
+    if (el) el.querySelector('.txt').textContent = 'Synced to cloud';
+  }).catch((e) => {
+    console.error('Cloud save failed', e);
+    toast('Cloud save failed — kept local copy', 'err');
+    if (el) { el.classList.remove('cloud'); el.querySelector('.txt').textContent = 'Saved locally'; }
+  });
+}, 600);
+
+function scheduleCloudSave() { if (syncMode === 'cloud') debouncedCloudSave(); }
+
+function applyRemotePlan(plan) {
+  applyingRemote = true;
+  try {
+    const rs = plan.state || {};
+    state = {
+      ...DEFAULT_STATE(),
+      ...rs,
+      slots: { ...PRESETS.standard, ...(rs.slots || {}) },
+    };
+    (state.subjects || []).forEach((s) => {
+      if (!s.id) s.id = uid();
+      (s.topics || []).forEach((t) => { if (!t.id) t.id = uid(); });
+    });
+    doneMap = { ...(plan.done || {}) };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    try { localStorage.setItem(DONE_KEY,   JSON.stringify(doneMap)); } catch (e) {}
+    lastLocalSignature = signatureFor({ state, done: doneMap });
+    renderAll();
+  } finally {
+    applyingRemote = false;
+  }
+}
+
+function updateCloudBar() {
+  const cs = window.cloudSync;
+  const bar = $('cloudBar');
+  if (!cs || !cs.enabled) { bar.classList.add('hidden'); return; }
+  bar.classList.remove('hidden');
+  const status = $('cloudStatus');
+  const actions = $('cloudActions');
+  const user = cs.currentUser();
+
+  if (!user) {
+    status.innerHTML = `<b>Cloud sync:</b> sign in to save your plan and checklist online and share with others.`;
+    actions.innerHTML = `
+      <button class="btn google" id="signInBtn" type="button"><span class="g"></span>Sign in with Google</button>
+    `;
+    $('signInBtn').addEventListener('click', async () => {
+      try { await cs.signInGoogle(); }
+      catch (e) { toast(e.message || 'Sign-in failed', 'err'); }
+    });
+    const si = $('saveIndicator');
+    if (si) { si.classList.remove('cloud'); si.querySelector('.txt').textContent = 'Saved locally'; }
+    return;
+  }
+
+  const plans = cs.plans();
+  const activeId = cs.currentPlanId();
+  const active = plans.find((p) => p.id === activeId);
+  const name = user.displayName || user.email || 'Signed in';
+  const initial = (name[0] || '?').toUpperCase();
+  const photo = user.photoURL ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer" />` : esc(initial);
+
+  const options = plans.map((p) =>
+    `<option value="${esc(p.id)}" ${p.id === activeId ? 'selected' : ''}>${esc(p.name || 'Untitled plan')}${p.ownerUid !== user.uid ? ' (shared)' : ''}</option>`
+  ).join('');
+
+  status.innerHTML = `
+    <span class="avatar">${photo}</span>
+    <span class="who">${esc(name)} <small>${esc(user.email || '')}</small></span>
+  `;
+  status.style.display = 'inline-flex'; status.style.alignItems = 'center'; status.style.gap = '8px';
+
+  actions.innerHTML = `
+    ${plans.length > 0 ? `<select id="planPicker" class="plan-picker" title="Switch plan">${options}</select>` : ''}
+    <button class="btn sm" id="newPlanBtn" type="button" title="Create a new plan">+ New</button>
+    ${active && active.ownerUid === user.uid ? `
+      <button class="btn sm" id="renameBtn" type="button" title="Rename this plan">Rename</button>
+      <button class="btn sm" id="shareBtn"  type="button" title="Share with another user">Share…</button>
+      <button class="btn sm" id="deleteBtn" type="button" title="Delete this plan">Delete</button>
+    ` : ''}
+    <button class="btn sm" id="signOutBtn" type="button">Sign out</button>
+  `;
+
+  if ($('planPicker')) {
+    $('planPicker').addEventListener('change', (e) => cs.setActivePlan(e.target.value));
+  }
+  $('newPlanBtn').addEventListener('click', async () => {
+    const name = prompt('Name for the new plan:', 'New study plan');
+    if (!name) return;
+    try {
+      await cs.createPlan(name, {}, {});
+      toast('Created plan', 'ok');
+    } catch (e) { toast(e.message || 'Create failed', 'err'); }
+  });
+  const renameBtn = $('renameBtn');
+  if (renameBtn) renameBtn.addEventListener('click', async () => {
+    const newName = prompt('Rename plan:', active ? active.name : '');
+    if (!newName) return;
+    try { await cs.renamePlan(activeId, newName); toast('Renamed', 'ok'); }
+    catch (e) { toast(e.message || 'Rename failed', 'err'); }
+  });
+  const deleteBtn = $('deleteBtn');
+  if (deleteBtn) deleteBtn.addEventListener('click', async () => {
+    if (!confirm(`Delete plan "${active ? active.name : ''}"? This cannot be undone.`)) return;
+    try { await cs.deletePlan(activeId); toast('Deleted', 'ok'); }
+    catch (e) { toast(e.message || 'Delete failed', 'err'); }
+  });
+  const shareBtn = $('shareBtn');
+  if (shareBtn) shareBtn.addEventListener('click', () => openShareModal(active));
+  $('signOutBtn').addEventListener('click', () => cs.signOut());
+
+  const si = $('saveIndicator');
+  if (si) {
+    si.classList.add('cloud');
+    si.querySelector('.txt').textContent = active ? 'Synced to cloud' : 'Connecting…';
+  }
+}
+
+/* ---------- Share modal ---------- */
+function openShareModal(plan) {
+  if (!plan) return;
+  const cs = window.cloudSync;
+  $('modalTitle').textContent = `Share "${plan.name || 'Untitled plan'}"`;
+  $('modalHint').textContent = "Add another person's Google email. They'll see this plan when they sign in with that account.";
+  const body = $('modalBody');
+
+  function render() {
+    const emails = (plan.memberEmails || []);
+    const ownerEmail = (plan.ownerEmail || '').toLowerCase();
+    body.innerHTML = `
+      <div class="row2">
+        <input type="email" id="shareEmail" placeholder="someone@gmail.com" />
+        <button class="btn primary sm" id="shareAdd" type="button">Add</button>
+      </div>
+      <div class="members">
+        ${emails.map((e) => `
+          <div class="member">
+            <div>${esc(e)} ${e === ownerEmail ? '<span class="role">owner</span>' : '<span class="role">member</span>'}</div>
+            ${e === ownerEmail ? '' : `<button type="button" data-email="${esc(e)}" title="Remove">×</button>`}
+          </div>
+        `).join('')}
+      </div>
+    `;
+    $('shareAdd').addEventListener('click', async () => {
+      const v = $('shareEmail').value.trim();
+      if (!v) return;
+      try {
+        await cs.sharePlan(plan.id, v);
+        $('shareEmail').value = '';
+        toast('Invitation added', 'ok');
+      } catch (e) { toast(e.message || 'Could not share', 'err'); }
+    });
+    $('shareEmail').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); $('shareAdd').click(); }
+    });
+    body.querySelectorAll('[data-email]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        if (!confirm(`Remove ${b.dataset.email}?`)) return;
+        try { await cs.unsharePlan(plan.id, b.dataset.email); toast('Removed', 'ok'); }
+        catch (e) { toast(e.message || 'Could not update', 'err'); }
+      });
+    });
+  }
+
+  render();
+  $('modalBackdrop').classList.remove('hidden');
+
+  // Live-refresh members list if plan snapshot updates while modal open
+  const unsub = cs.on('planChange', (p) => { if (p && p.id === plan.id) { plan = p; render(); } });
+  const close = () => {
+    $('modalBackdrop').classList.add('hidden');
+    unsub && unsub();
+    $('modalCancel').removeEventListener('click', close);
+    $('modalBackdrop').removeEventListener('click', bgClose);
+  };
+  const bgClose = (e) => { if (e.target === $('modalBackdrop')) close(); };
+  $('modalCancel').addEventListener('click', close);
+  $('modalBackdrop').addEventListener('click', bgClose);
+}
+
+/* ---------- Cloud wiring (runs once cloud-sync.js is ready) ---------- */
+function wireCloudSync() {
+  const cs = window.cloudSync;
+  if (!cs || !cs.enabled) { updateCloudBar(); return; }
+
+  cs.on('authChange', async (user) => {
+    if (user) {
+      syncMode = 'cloud';
+      toast(`Signed in as ${user.email}`, 'ok');
+    } else {
+      syncMode = 'local';
+      lastLocalSignature = '';
+      // Falling back to whatever's in localStorage, which we've been keeping in sync.
+    }
+    updateCloudBar();
+  });
+
+  cs.on('plansChange', async (plans) => {
+    const user = cs.currentUser();
+    if (!user) return;
+    // On first sign-in, migrate local state into a cloud plan.
+    if (plans.length === 0) {
+      const migrateDone = Object.keys(doneMap).length > 0;
+      await cs.createPlan(
+        migrateDone ? 'My study plan' : 'My study plan',
+        JSON.parse(JSON.stringify(state)),
+        JSON.parse(JSON.stringify(doneMap))
+      );
+      toast('Your plan is now synced to the cloud', 'ok');
+    }
+    updateCloudBar();
+  });
+
+  cs.on('planChange', (plan) => {
+    if (!plan) { updateCloudBar(); return; }
+    applyRemotePlan(plan);
+    updateCloudBar();
+  });
+
+  cs.on('error', (err) => {
+    console.error('Cloud sync error:', err);
+    const msg = (err && err.code === 'permission-denied')
+      ? 'Permission denied — check Firestore rules (see FIREBASE_SETUP.md).'
+      : (err && err.message) || 'Cloud sync error';
+    toast(msg, 'err');
+  });
+
+  updateCloudBar();
+}
+
+if (window.cloudSync) wireCloudSync();
+else window.addEventListener('cloudsync-ready', wireCloudSync, { once: true });
 </script>
+
+<script type="module" src="./cloud-sync.js"></script>
 </body>
 </html>

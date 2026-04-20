@@ -24,7 +24,8 @@ https://<your-username>.github.io/<repo-name>/
 - **Weight slider** — 0.5× to 2× per subject, shown as a live multiplier.
 - **Live form summaries** — as you adjust dates or time slots, the form tells you "N sessions · X.Xh total study time".
 - **Inline validation** — bad input shows friendly warnings instead of a popup.
-- **Import / Export JSON** — save your plan, share it, or reload it later.
+- **Import / Export JSON** — save your plan, share it, or reload it later. Exports include checklist ticks so you can back up progress or move it between devices.
+- **Optional cloud sync** (Google Sign-in + Firebase) — turn it on and your plan + ticks follow you between phone / laptop / tablet, and you can share a plan with another user by email. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for the 10-minute one-time setup. Completely optional — the app works fully offline without it.
 - **Dark mode** — toggle in the header.
 - **Print / PDF** — a single click opens the browser print dialog with only the plan visible. Choose "Save as PDF" to export.
 - **Fully offline** — works on plane mode. No external JS, no external fonts, no tracking.
@@ -58,9 +59,29 @@ open index.html         # macOS
 xdg-open index.html     # Linux
 ```
 
+## Cloud sync (optional)
+
+See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for step-by-step instructions.
+
+Summary:
+
+1. Create a free Firebase project (no credit card needed).
+2. Enable **Google Sign-in** and **Firestore Database**.
+3. Paste the generated config into `firebase-config.js`.
+4. Paste the rules from `firestore.rules` into Firebase Console → Firestore → Rules → Publish.
+5. Push to GitHub. Done.
+
+Then, on the site, you'll see a **Sign in with Google** button top-left. After signing in:
+- Your plan and checklist auto-sync to your Firestore in real time.
+- Open the site on another device, sign in with the same Google account — everything is already there.
+- Click **+ New** to keep multiple named plans (e.g. "Mid-year exam", "Final exam").
+- Click **Share…** to invite another user by email — both can edit and tick in real time.
+
+Privacy: plans are stored in *your* Firebase project (under your Google account). Nobody else — including the author of this app — can see them. The Firestore security rules in `firestore.rules` enforce that a plan is only readable/writable by users whose Google email is on its `memberEmails` list.
+
 ## Tech
 
-Single HTML file — vanilla JavaScript, plain CSS, no framework, no build step, no dependencies.
+Single HTML file plus two small ES modules (`cloud-sync.js`, `firebase-config.js`). Vanilla JavaScript, plain CSS, no framework, no build step. The only external dependency is Firebase — and only when you opt in.
 
 ## License
 

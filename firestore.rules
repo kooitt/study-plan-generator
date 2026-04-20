@@ -1,0 +1,73 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function userEmail() {
+      return request.auth.token.email.lower();
+    }
+    function isMember(planData) {
+      return isSignedIn()
+        && planData.memberEmails is list
+        && userEmail() in planData.memberEmails;
+    }
+    function isOwner(planData) {
+      return isSignedIn() && request.auth.uid == planData.ownerUid;
+    }
+
+    // ------------------------------------------------------------------
+    // plans/{planId}
+    //   ownerUid:      string   UID of creator
+    //   ownerEmail:    string   email of creator (lowercased)
+    //   name:          string   display name
+    //   memberEmails:  list     lowercased emails allowed to read/write
+    //   state:         map      app state (subjects, slots, dates, options)
+    //   done:          map      { "subjectId::topicId": true, ... }
+    //   createdAt:     timestamp
+    //   updatedAt:     timestamp
+    // ------------------------------------------------------------------
+    match /plans/{planId} {
+
+      // Read: must be listed on the plan.
+      allow read: if isMember(resource.data);
+
+      // Create: must be signed in, must be the owner, and must be on the
+      // memberEmails list themselves.
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerEmail == userEmail()
+        && request.resource.data.memberEmails is list
+        && userEmail() in request.resource.data.memberEmails
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 120;
+
+      // Update:
+      //   - any current member may edit `state`, `done`, `updatedAt`, `name`
+      //   - only the owner may change `memberEmails`, `ownerUid`, `ownerEmail`
+      allow update: if isMember(resource.data)
+        && (
+          // Non-owner members cannot touch ownership / membership fields.
+          isOwner(resource.data) ||
+          (
+            request.resource.data.ownerUid == resource.data.ownerUid &&
+            request.resource.data.ownerEmail == resource.data.ownerEmail &&
+            request.resource.data.memberEmails == resource.data.memberEmails
+          )
+        );
+
+      // Delete: owner only.
+      allow delete: if isOwner(resource.data);
+    }
+
+    // ------------------------------------------------------------------
+    // users/{uid} — optional per-user profile (active plan, etc.)
+    // ------------------------------------------------------------------
+    match /users/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+    }
+  }
+}
