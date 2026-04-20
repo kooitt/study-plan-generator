@@ -1436,8 +1436,13 @@ function updateCloudBar() {
       <button class="btn google" id="signInBtn" type="button"><span class="g"></span>Sign in with Google</button>
     `;
     $('signInBtn').addEventListener('click', async () => {
+      console.info('[study-plan] Sign-in button clicked');
       try { await cs.signInGoogle(); }
-      catch (e) { toast(e.message || 'Sign-in failed', 'err'); }
+      catch (e) {
+        console.error('[study-plan] Sign-in error:', e);
+        const code = e && e.code ? ` (${e.code})` : '';
+        toast(`Sign-in failed${code}: ${e && e.message || e}`, 'err');
+      }
     });
     const si = $('saveIndicator');
     if (si) { si.classList.remove('cloud'); si.querySelector('.txt').textContent = 'Saved locally'; }

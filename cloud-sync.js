@@ -25,9 +25,11 @@
 import { firebaseConfig, isConfigured } from "./firebase-config.js";
 
 if (!isConfigured) {
+  console.info("[cloud-sync] firebase-config.js still has REPLACE_ME placeholders — running in offline/local mode.");
   window.cloudSync = { enabled: false };
   window.dispatchEvent(new CustomEvent("cloudsync-ready"));
-} else {
+} else try {
+  console.info("[cloud-sync] Loading Firebase SDK…", firebaseConfig.projectId);
   const FB = "https://www.gstatic.com/firebasejs/10.12.0";
   const [{ initializeApp }, authMod, fsMod] = await Promise.all([
     import(`${FB}/firebase-app.js`),
@@ -207,7 +209,25 @@ if (!isConfigured) {
 
   async function signInGoogle() {
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+    provider.setCustomParameters({ prompt: "select_account" });
+    try {
+      console.info("[cloud-sync] Opening Google sign-in popup…");
+      return await signInWithPopup(auth, provider);
+    } catch (err) {
+      console.warn("[cloud-sync] Popup sign-in failed:", err && err.code, err && err.message);
+      // Fall back to full-page redirect if popups are blocked or unsupported.
+      if (
+        err && (err.code === "auth/popup-blocked" ||
+                err.code === "auth/popup-closed-by-user" ||
+                err.code === "auth/cancelled-popup-request" ||
+                err.code === "auth/operation-not-supported-in-this-environment")
+      ) {
+        const { signInWithRedirect } = authMod;
+        console.info("[cloud-sync] Falling back to redirect sign-in");
+        return signInWithRedirect(auth, provider);
+      }
+      throw err;
+    }
   }
 
   window.cloudSync = {
@@ -226,5 +246,10 @@ if (!isConfigured) {
     unsharePlan,
     on,
   };
+  console.info("[cloud-sync] Firebase ready. Project:", firebaseConfig.projectId);
+  window.dispatchEvent(new CustomEvent("cloudsync-ready"));
+} catch (err) {
+  console.error("[cloud-sync] Failed to initialise Firebase:", err);
+  window.cloudSync = { enabled: false, initError: err };
   window.dispatchEvent(new CustomEvent("cloudsync-ready"));
 }

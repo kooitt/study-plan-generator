@@ -15,12 +15,12 @@
 // cloud sync, progress saved in your browser's localStorage only).
 
 export const firebaseConfig = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME.firebaseapp.com",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME.appspot.com",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME",
+  apiKey: "AIzaSyAgbniAjntaEtXRA5JhYMZ_kbheGIuBZP0",
+  authDomain: "study-plan-generator-90f50.firebaseapp.com",
+  projectId: "study-plan-generator-90f50",
+  storageBucket: "study-plan-generator-90f50.firebasestorage.app",
+  messagingSenderId: "1086420602145",
+  appId: "1:1086420602145:web:6f156b4093ee5c7b178260",
 };
 
 export const isConfigured = !Object.values(firebaseConfig).some((v) =>
