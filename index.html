@@ -115,10 +115,17 @@
   body[data-view="plan"]     #view-plan     { display: block; }
   body[data-view="progress"] #view-progress { display: block; }
   body[data-view="settings"] #view-settings {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) minmax(300px, 1fr) minmax(340px, 1.3fr);
     gap: 18px; align-items: start;
   }
-  @media (max-width: 720px) {
+  /* The middle column stacks Section 2 (Time slots) above Section 4 (Options)
+     so they stay next to each other no matter how tall Section 3 (Subjects) grows. */
+  .settings-col { display: flex; flex-direction: column; gap: 18px; }
+  @media (max-width: 960px) {
+    body[data-view="settings"] #view-settings { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
     body[data-view="settings"] #view-settings { grid-template-columns: 1fr; }
   }
   .view-empty {
@@ -584,6 +591,7 @@
         <div id="dateSummary" class="hint" style="margin-top:8px"></div>
       </section>
 
+      <div class="settings-col">
       <section class="panel">
         <h2><span class="num">2</span><span class="title">Time slots</span></h2>
         <p class="hint">Minutes per session. Set to 0 to skip. Quick presets:</p>
@@ -620,13 +628,6 @@
       </section>
 
       <section class="panel">
-        <h2><span class="num">3</span><span class="title">Subjects &amp; topics</span></h2>
-        <p class="hint">Drag to reorder. Use the slider to give a subject more or less time relative to the others.</p>
-        <div id="subjects"></div>
-        <button class="btn sm" id="addSubject" type="button">+ Add subject</button>
-      </section>
-
-      <section class="panel">
         <h2><span class="num">4</span><span class="title">Options</span></h2>
         <div class="row">
           <div>
@@ -647,6 +648,14 @@
             </select>
           </div>
         </div>
+      </section>
+      </div>
+
+      <section class="panel">
+        <h2><span class="num">3</span><span class="title">Subjects &amp; topics</span></h2>
+        <p class="hint">Drag to reorder. Use the slider to give a subject more or less time relative to the others.</p>
+        <div id="subjects"></div>
+        <button class="btn sm" id="addSubject" type="button">+ Add subject</button>
       </section>
     </section>
 
