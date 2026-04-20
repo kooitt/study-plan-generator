@@ -314,6 +314,24 @@
   .save-indicator.saved .dot { background: var(--success); }
   .save-indicator.cloud .dot { background: var(--primary); }
 
+  .persistence-note {
+    color: var(--muted); font-size: 12px; margin: 18px 0 40px; line-height: 1.55;
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 10px 12px; border: 1px dashed var(--line-strong);
+    border-radius: 10px; background: var(--panel-2);
+  }
+  .persistence-note .ico {
+    width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px;
+    stroke: currentColor; stroke-width: 2; fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .persistence-note .dot-live {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.15);
+    margin: 0 4px 1px 0; vertical-align: middle;
+  }
+  .persistence-note b { color: var(--ink); font-weight: 600; }
+
   /* ---------- Cloud / login bar ---------- */
   .cloud-bar {
     display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
@@ -912,8 +930,8 @@ function renderOptions() {
   $('restLastDay').value = state.restLastDay;
   $('darkToggle').checked = !!state.dark;
   applyTheme();
-  $('reviewPct').addEventListener('change',  () => { state.reviewPct = +$('reviewPct').value; onChange(); });
-  $('restLastDay').addEventListener('change', () => { state.restLastDay = $('restLastDay').value; onChange(); });
+  $('reviewPct').addEventListener('change',  () => { state.reviewPct = +$('reviewPct').value; onChange({ immediate: true }); });
+  $('restLastDay').addEventListener('change', () => { state.restLastDay = $('restLastDay').value; onChange({ immediate: true }); });
   $('darkToggle').addEventListener('change', () => { state.dark = $('darkToggle').checked; applyTheme(); saveState(); });
 }
 function applyTheme() { document.documentElement.dataset.theme = state.dark ? 'dark' : 'light'; }
@@ -975,13 +993,13 @@ function renderSubjects() {
   });
 
   box.querySelectorAll('[data-rm-s]').forEach((b) =>
-    b.addEventListener('click', () => { state.subjects.splice(+b.dataset.rmS, 1); renderSubjects(); onChange(); }));
+    b.addEventListener('click', () => { state.subjects.splice(+b.dataset.rmS, 1); renderSubjects(); onChange({ immediate: true }); }));
   box.querySelectorAll('[data-rm-t]').forEach((b) =>
     b.addEventListener('click', () => {
       const [si, ti] = b.dataset.rmT.split('-').map(Number);
       state.subjects[si].topics.splice(ti, 1);
       if (state.subjects[si].topics.length === 0) state.subjects[si].topics.push({ id: uid(), name: 'Topic 1', startPage: 1, endPage: 10 });
-      renderSubjects(); onChange();
+      renderSubjects(); onChange({ immediate: true });
     }));
   box.querySelectorAll('[data-add-t]').forEach((b) =>
     b.addEventListener('click', () => {
@@ -989,7 +1007,7 @@ function renderSubjects() {
       const s  = state.subjects[si];
       const lastEnd = s.topics.at(-1)?.endPage || 0;
       s.topics.push({ id: uid(), name: `Topic ${s.topics.length + 1}`, startPage: lastEnd + 1, endPage: lastEnd + 10 });
-      renderSubjects(); onChange();
+      renderSubjects(); onChange({ immediate: true });
     }));
 
   // Drag-reorder
@@ -1012,7 +1030,7 @@ function renderSubjects() {
       const [m] = state.subjects.splice(dragIdx, 1);
       state.subjects.splice(to, 0, m);
       dragIdx = null;
-      renderSubjects(); onChange();
+      renderSubjects(); onChange({ immediate: true });
     });
   });
 }
@@ -1209,6 +1227,24 @@ function renderEmptyOutput(errs) {
   updateTabCounts(0, 0, 0);
 }
 
+function persistenceNote() {
+  const cs = window.cloudSync;
+  const signedIn = !!(cs && cs.enabled && cs.currentUser());
+  if (signedIn) {
+    return `<span class="dot-live"></span><span>
+      <b>Synced to the cloud.</b> Your checklist updates in real time across every device you sign in on. Use <b>Share</b> in the top bar to let someone else see the same progress.
+    </span>`;
+  }
+  if (cs && cs.enabled) {
+    return `<svg class="ico" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg><span>
+      Your ticks are saved in this browser. <b>Sign in</b> at the top to sync them to the cloud and use them on another device.
+    </span>`;
+  }
+  return `<svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>
+    Your ticks are saved in this browser. Use <b>Export</b> (top-right) to back them up or move them to another device.
+  </span>`;
+}
+
 function updateTabCounts(sessionCount, topicsTotal, topicsDone) {
   const planPill = $('tabPlanCount');
   const progPill = $('tabProgressCount');
@@ -1344,10 +1380,7 @@ function renderPlan(sessions, totalMins, topics) {
     ${statStrip}
     <h2 class="section">Coverage checklist <span class="hint">Click any topic to tick it off.</span></h2>
     <div class="coverage-grid">${covHtml}</div>
-    <p style="color:var(--muted); font-size:12px; margin: 16px 0 40px; line-height:1.6;">
-      Your ticks are saved automatically in this browser and will be there when you come back — even after you close the tab or restart your computer.<br />
-      To back up your progress or move it to another device, use <b>Export</b> (top-right): the downloaded JSON file contains both your plan and your ticks. Import it anywhere to restore.
-    </p>
+    <p class="persistence-note">${persistenceNote()}</p>
   `;
 
   updateTabCounts(sessions.length, topics.length, doneCount);
@@ -1382,14 +1415,15 @@ function renderPlan(sessions, totalMins, topics) {
 /* =========================================================
    Change pipeline
 ========================================================= */
-const debouncedGenerate = debounce(generate, 250);
+const debouncedGenerate = debounce(generate, 120);
 const debouncedSave     = debounce(saveState, 400);
 
-function onChange({ skipSubjectsRerender = false } = {}) {
+function onChange({ skipSubjectsRerender = false, immediate = false } = {}) {
   updateDateSummary();
   updateTimeSummary();
   debouncedSave();
-  debouncedGenerate();
+  if (immediate) generate();
+  else debouncedGenerate();
 }
 
 /* =========================================================
@@ -1400,7 +1434,7 @@ function applyPreset(name) {
   SLOT_KEYS.forEach((k) => { $(k).value = state.slots[k]; });
   updateTimeSummary();
   saveState();
-  debouncedGenerate();
+  generate();
   toast(name === 'clear' ? 'All time slots cleared' : `Applied "${name}" preset`, 'ok');
 }
 
@@ -1503,12 +1537,12 @@ function renderAll() {
   renderSlots();
   renderOptions();
   renderSubjects();
-  debouncedGenerate();
+  generate();
 }
 
 $('addSubject').addEventListener('click', () => {
   state.subjects.push({ id: uid(), name: `Subject ${state.subjects.length + 1}`, weight: 1.0, topics: [{ id: uid(), name: 'Topic 1', startPage: 1, endPage: 10 }] });
-  renderSubjects(); onChange();
+  renderSubjects(); onChange({ immediate: true });
 });
 $('loadSample').addEventListener('click', loadSample);
 $('resetAll').addEventListener('click', resetAll);
@@ -1825,6 +1859,7 @@ function wireCloudSync() {
       // Falling back to whatever's in localStorage, which we've been keeping in sync.
     }
     updateCloudBar();
+    generate();
   });
 
   cs.on('plansChange', async (plans) => {
