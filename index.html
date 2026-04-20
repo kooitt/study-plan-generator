@@ -642,19 +642,76 @@
   .switch input:checked ~ .track { background: var(--accent); }
   .switch input:checked ~ .track::after { left: 14px; }
 
-  /* ---------- Print ---------- */
+  /* ---------- Print document (document-style handout) ---------- */
+  /* The live UI uses interactive cards; for print we render a dedicated
+     document that looks like a paper study plan (see printable Word doc). */
+  .print-doc { display: none; background:#fff; max-width: 820px; margin: 20px auto; padding: 30px 40px; border: 1px solid #ddd; color:#111; font: 11pt/1.45 "Segoe UI", Arial, sans-serif; }
+  .print-doc h1 { font-size: 22pt; margin: 0 0 4pt; color: #111; }
+  .print-doc .sub-head { color: #444; font-size: 11pt; margin: 0 0 14pt; }
+  .print-doc h2 { font-size: 14pt; margin: 18pt 0 6pt; color: #0f172a; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; }
+  .print-doc h3 { font-size: 12.5pt; margin: 14pt 0 6pt; color: #1e3a8a; }
+  .print-doc h4 { font-size: 11pt; margin: 10pt 0 4pt; color: #111; }
+  .print-doc p  { margin: 4pt 0; }
+  .print-doc .note { color: #555; font-size: 10pt; margin: 2pt 0 8pt; }
+  .print-doc table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; font-size: 10.5pt; }
+  .print-doc th, .print-doc td { border: 0.5pt solid #94a3b8; padding: 4pt 6pt; vertical-align: top; text-align: left; }
+  .print-doc thead th { background: #e2e8f0; font-weight: 600; }
+  .print-doc tfoot td { background: #f1f5f9; font-weight: 600; }
+  .print-doc .print-day-head { font-weight: 600; margin: 8pt 0 3pt; }
+  .print-doc .print-day-head .tag { display: inline-block; margin-left: 6pt; padding: 0 5pt; border: 0.5pt solid #94a3b8; border-radius: 3pt; font-size: 9pt; font-weight: 500; color: #334155; }
+  .print-doc .tick { width: 22pt; text-align: center; font-size: 13pt; }
+  .print-doc .print-subj-check { margin-bottom: 8pt; }
+  /* dev preview — if ?preview=print, show the print document on screen. */
+  body.preview-print .print-doc { display: block !important; }
+  body.preview-print main > section:not(.print-doc) { display: none !important; }
   @media print {
-    body { background: #fff; }
-    header.page, .actions, .cloud-bar, nav.tabs, #view-settings { display: none !important; }
+    body { background: #fff; color: #111; font: 11pt/1.45 "Segoe UI", Arial, sans-serif; }
+    /* Hide every live UI element. */
+    header.page, .actions, .cloud-bar, .cloud-user, nav.tabs,
+    #view-settings, #view-plan, #view-progress, #toast, #shareModal,
+    .save-indicator { display: none !important; }
     main { padding: 0; }
-    .view { display: block !important; }
-    #view-plan, #view-progress { display: block !important; }
-    #view-plan { break-after: page; }
-    .panel, .stat, .cov-card, table.plan, .day-card { box-shadow: none !important; break-inside: avoid; }
+    .view { display: none !important; }
+    .print-doc { display: block !important; }
+    @page { margin: 14mm; size: A4; }
+
+    .print-doc h1 { font-size: 22pt; margin: 0 0 4pt; color: #111; }
+    .print-doc .sub-head { color: #444; font-size: 11pt; margin: 0 0 14pt; }
+    .print-doc h2 { font-size: 14pt; margin: 18pt 0 6pt; color: #0f172a; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; }
+    .print-doc h3 { font-size: 12.5pt; margin: 14pt 0 6pt; color: #1e3a8a; }
+    .print-doc h4 { font-size: 11pt; margin: 10pt 0 4pt; color: #111; }
+    .print-doc p  { margin: 4pt 0; }
+    .print-doc .note { color: #555; font-size: 10pt; margin: 2pt 0 8pt; }
+
+    .print-doc table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; font-size: 10.5pt; }
+    .print-doc th, .print-doc td {
+      border: 0.5pt solid #94a3b8; padding: 4pt 6pt; vertical-align: top; text-align: left;
+    }
+    .print-doc thead th { background: #e2e8f0; font-weight: 600; }
+    .print-doc tfoot td { background: #f1f5f9; font-weight: 600; }
+    .print-doc table tr { break-inside: avoid; }
+    .print-doc thead { display: table-header-group; } /* repeat headers across pages */
+
+    .print-doc .print-week { break-inside: auto; }
+    .print-doc .print-day { margin: 6pt 0 10pt; break-inside: avoid; }
+    .print-doc .print-day-head { font-weight: 600; margin: 8pt 0 3pt; }
+    .print-doc .print-day-head .tag {
+      display: inline-block; margin-left: 6pt; padding: 0 5pt;
+      border: 0.5pt solid #94a3b8; border-radius: 3pt;
+      font-size: 9pt; font-weight: 500; color: #334155;
+    }
+    .print-doc .print-day table th:nth-child(1),
+    .print-doc .print-day table td:nth-child(1) { width: 120pt; white-space: nowrap; }
+    .print-doc .print-day table th:nth-child(2),
+    .print-doc .print-day table td:nth-child(2) { width: 90pt; white-space: nowrap; }
+
+    .print-doc .tick { width: 22pt; text-align: center; font-size: 13pt; }
+    .print-doc .print-subj-check { break-inside: avoid; margin-bottom: 8pt; }
+    .print-doc .print-subj-check table th:nth-child(3),
+    .print-doc .print-subj-check table td:nth-child(3) { width: 150pt; color: #334155; }
+
+    .print-doc .section-break { break-before: page; }
     h2.section { break-after: avoid; }
-    .day-card { break-inside: avoid; border-radius: 0; }
-    table.plan tr { break-inside: avoid; }
-    @page { margin: 14mm; }
   }
 </style>
 </head>
@@ -812,6 +869,9 @@
         </div>
       </div>
     </section>
+
+    <!-- ----- PRINT-ONLY DOCUMENT (hidden on screen, rendered when printing) ----- -->
+    <section id="printDoc" class="print-doc" aria-hidden="true"></section>
   </main>
 
   <div id="toast" role="status" aria-live="polite"></div>
@@ -896,6 +956,7 @@ function saveDone() {
 const $  = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtLong  = (d) => d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+const fmtFull  = (d) => d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 const fmtShort = (d) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 const mmssShort = (m) => m >= 60 ? `${(m/60).toFixed(m % 60 === 0 ? 0 : 1)}h` : `${m}m`;
 const dayType  = (d) => { const w = d.getDay(); return w === 0 ? 'sunday' : w === 6 ? 'saturday' : 'weekday'; };
@@ -1597,6 +1658,207 @@ function renderPlan(sessions, totalMins, topics) {
       refreshCounts();
     });
   });
+
+  // Always keep the print document in sync with the current plan so that
+  // File > Print produces a clean, document-style handout without needing
+  // to switch views first.
+  buildPrintDoc(sessions, totalMins, topics);
+}
+
+/* =========================================================
+   Printable document (matches Year-6-Study-Plan.docx layout)
+========================================================= */
+function buildPrintDoc(sessions, totalMins, topics) {
+  const printEl = $('printDoc');
+  if (!printEl) return;
+  if (!sessions.length || !topics.length) { printEl.innerHTML = ''; return; }
+
+  // Resolve the active plan name (falls back to generic title).
+  let planName = 'Exam Study Plan';
+  try {
+    const cs = window.cloudSync;
+    if (cs && cs.enabled && cs.currentUser && cs.currentUser()) {
+      const active = (cs.plans() || []).find((p) => p.id === cs.currentPlanId());
+      if (active && active.name) planName = active.name;
+    }
+  } catch (_) { /* no-op */ }
+
+  const sd = new Date($('startDate').value + 'T00:00:00');
+  const ed = new Date($('endDate').value + 'T00:00:00');
+  const days = Math.round((ed - sd) / 86400000) + 1;
+
+  // --- Date range header ---------------------------------------------------
+  const headLine = `${fmtFull(sd)} → ${fmtFull(ed)} · ${days} day${days === 1 ? '' : 's'} · ${state.subjects.length} subject${state.subjects.length === 1 ? '' : 's'} · ${topics.length} topic${topics.length === 1 ? '' : 's'}`;
+
+  // --- Time available table ------------------------------------------------
+  let wdDays = 0, satDays = 0, sunDays = 0;
+  for (let d = new Date(sd); d <= ed; d.setDate(d.getDate() + 1)) {
+    const t = dayType(d);
+    if (t === 'weekday') wdDays++;
+    else if (t === 'saturday') satDays++;
+    else sunDays++;
+  }
+  const slotsFor = (pairs) => pairs
+    .filter(([, k]) => (+state.slots[k] || 0) > 0)
+    .map(([name, k]) => `${name} ${mmssShort(+state.slots[k])}`)
+    .join(' + ');
+  const minsFor = (keys) => keys.reduce((a, k) => a + (+state.slots[k] || 0), 0);
+
+  const timeRows = [];
+  const addRow = (label, dayCount, sessionStr, mins) => {
+    if (dayCount > 0 && mins > 0) {
+      timeRows.push(`<tr><td>${esc(label)} (${dayCount} day${dayCount === 1 ? '' : 's'})</td><td>${esc(sessionStr)}</td><td>${(mins / 60).toFixed(1)} hours</td></tr>`);
+    }
+  };
+  addRow('Weekdays', wdDays,
+    slotsFor([['Afternoon', 'wd_afternoon'], ['Evening', 'wd_evening']]),
+    wdDays * minsFor(['wd_afternoon', 'wd_evening']));
+  addRow('Saturdays', satDays,
+    slotsFor([['Morning', 'sat_morning'], ['Afternoon 1', 'sat_aft1'], ['Afternoon 2', 'sat_aft2'], ['Evening', 'sat_evening']]),
+    satDays * minsFor(['sat_morning', 'sat_aft1', 'sat_aft2', 'sat_evening']));
+  addRow('Sundays', sunDays,
+    slotsFor([['Morning', 'sun_morning'], ['Afternoon 1', 'sun_aft1'], ['Afternoon 2', 'sun_aft2'], ['Evening', 'sun_evening']]),
+    sunDays * minsFor(['sun_morning', 'sun_aft1', 'sun_aft2', 'sun_evening']));
+
+  const timeTable = `
+    <h2>Time available</h2>
+    <table>
+      <thead><tr><th>Period</th><th>Sessions</th><th>Total</th></tr></thead>
+      <tbody>${timeRows.join('')}</tbody>
+      <tfoot><tr><td>TOTAL</td><td></td><td>${(totalMins / 60).toFixed(1)} hours</td></tr></tfoot>
+    </table>`;
+
+  // --- Subject allocation table -------------------------------------------
+  const allocRows = state.subjects.map((s, i) => {
+    const subT  = topics.filter((t) => t.subjectIdx === i);
+    const mins  = subT.reduce((a, t) => a + t.mins, 0);
+    const pages = subT.reduce((a, t) => a + t.pages, 0);
+    return `<tr>
+      <td>${esc(s.name)}</td>
+      <td>${subT.length}</td>
+      <td>${pages}</td>
+      <td>${(mins / 60).toFixed(1)} h</td>
+      <td>${Math.round(100 * mins / Math.max(1, totalMins))}%</td>
+    </tr>`;
+  }).join('');
+  const allocTable = `
+    <h2>Subject allocation</h2>
+    <p class="note">Time weighted by page count and difficulty.</p>
+    <table>
+      <thead><tr><th>Subject</th><th>Topics</th><th>Pages</th><th>Allocated</th><th>Share</th></tr></thead>
+      <tbody>${allocRows}</tbody>
+    </table>`;
+
+  // --- Weekly schedule (group days into Mon-Sun weeks) --------------------
+  const byDate = new Map();
+  sessions.forEach((ss) => {
+    const k = ss.date.toDateString();
+    if (!byDate.has(k)) byDate.set(k, { date: ss.date, sessions: [] });
+    byDate.get(k).sessions.push(ss);
+  });
+  const dayList = [...byDate.values()].sort((a, b) => a.date - b.date);
+
+  const mondayOf = (d) => {
+    const nd = new Date(d);
+    const offset = (nd.getDay() + 6) % 7; // 0 = Mon
+    nd.setDate(nd.getDate() - offset);
+    nd.setHours(0, 0, 0, 0);
+    return nd;
+  };
+  const weeks = [];
+  dayList.forEach((d) => {
+    const wk = mondayOf(d.date);
+    const key = wk.toDateString();
+    let last = weeks[weeks.length - 1];
+    if (!last || last.key !== key) {
+      last = { key, start: wk, end: new Date(wk.getTime() + 6 * 86400000), days: [] };
+      weeks.push(last);
+    }
+    last.days.push(d);
+  });
+
+  const renderDay = (d) => {
+    const typ = dayType(d.date);
+    const tag = dayTypeLabel(typ);
+    const rows = d.sessions.map((s) => {
+      const taskHtml = s.items.map((it) => {
+        if (it.kind === 'study') {
+          return `${esc(it.note)} <span style="color:#475569">(${esc(it.pageRange)})</span>`;
+        }
+        if (it.kind === 'review') {
+          return `<b>${esc(it.topicName || it.subjectName)}</b> — ${esc(it.note)}`;
+        }
+        return `${esc(it.note)}`;
+      }).join('<br>') || '—';
+      const subj = s.items.length && s.items[0].subjectName
+        ? [...new Set(s.items.map((it) => it.subjectName).filter(Boolean))].join(' / ')
+        : '—';
+      return `<tr>
+        <td>${esc(s.slot)} · ${mmssShort(s.mins)}</td>
+        <td>${esc(subj)}</td>
+        <td>${taskHtml}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="print-day">
+      <div class="print-day-head">${esc(fmtLong(d.date))}<span class="tag">${esc(tag)}</span></div>
+      <table>
+        <thead><tr><th>Session</th><th>Subject</th><th>Task</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  };
+
+  const weeksHtml = weeks.map((w, i) => {
+    // Clamp the displayed week range to the plan's actual date window so we
+    // don't advertise dates outside what the student is studying.
+    const displayStart = w.start < sd ? sd : w.start;
+    const displayEnd   = w.end   > ed ? ed : w.end;
+    return `<section class="print-week">
+      <h3>Week ${i + 1} · ${fmtShort(displayStart)} – ${fmtShort(displayEnd)}</h3>
+      ${w.days.map(renderDay).join('')}
+    </section>`;
+  }).join('');
+
+  const scheduleSection = `
+    <h2 class="section-break">Day-by-day schedule</h2>
+    ${weeksHtml}`;
+
+  // --- Coverage checklist --------------------------------------------------
+  const checklistHtml = state.subjects.map((s, i) => {
+    const subT = topics.filter((t) => t.subjectIdx === i);
+    if (!subT.length) return '';
+    const rows = subT.map((t) => {
+      const when = t.items.length
+        ? [...new Set(t.items.map((it) => fmtShort(it.date)))].join(', ')
+        : '—';
+      return `<tr>
+        <td class="tick">☐</td>
+        <td>${esc(t.topicName)} <span style="color:#475569">(${esc(t.pageRange)})</span></td>
+        <td>${esc(when)}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="print-subj-check">
+      <h4>${esc(s.name)} (${subT.length} ${subT.length === 1 ? 'topic' : 'topics'})</h4>
+      <table>
+        <thead><tr><th class="tick">☐</th><th>Topic</th><th>When</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  const checklistSection = `
+    <h2 class="section-break">Coverage checklist</h2>
+    <p class="note">Tick the box (☐ → ☑) as you finish each topic.</p>
+    ${checklistHtml}`;
+
+  printEl.innerHTML = `
+    <h1>${esc(planName)}</h1>
+    <p class="sub-head">${esc(headLine)}</p>
+    ${timeTable}
+    ${allocTable}
+    ${scheduleSection}
+    ${checklistSection}
+  `;
 }
 
 /* =========================================================
@@ -1746,6 +2008,12 @@ document.addEventListener('keydown', (e) => {
 
 // First render
 renderAll();
+
+// Dev-only preview: `?preview=print` makes the print-ready document
+// visible on screen so you can eyeball exactly what will be printed.
+if (new URLSearchParams(location.search).get('preview') === 'print') {
+  document.body.classList.add('preview-print');
+}
 
 /* =========================================================
    Cloud sync integration (Firebase) — optional.
