@@ -571,11 +571,11 @@ const DEFAULT_STATE = () => ({
   dark:      false,
 });
 
+let nextId = 1;
+function uid() { return `id${Date.now().toString(36)}${(nextId++).toString(36)}`; }
+
 let state = loadState();
 let doneMap = loadDone();
-let nextId = 1;
-
-function uid() { return `id${Date.now().toString(36)}${(nextId++).toString(36)}`; }
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 function addDaysISO(iso, n) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
 function sampleSubject(i) {
