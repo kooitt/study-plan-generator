@@ -1,12 +1,17 @@
-# OS files
-Thumbs.db
+# OS
 .DS_Store
+Thumbs.db
+desktop.ini
 
-# Editor
+# Editors
 .vscode/
 .idea/
+*.swp
 
-# Build artifacts (this site has none, but future-proofing)
-node_modules/
+# Build / local artifacts
 dist/
-build/
+node_modules/
+
+# Temp commit message files
+.commit-msg.tmp
+*.tmp.msg
