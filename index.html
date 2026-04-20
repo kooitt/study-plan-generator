@@ -1091,7 +1091,10 @@ function renderPlan(sessions, totalMins, topics) {
     ${daysHtml}
     <h2 class="section">Coverage checklist</h2>
     <div class="coverage-grid">${covHtml}</div>
-    <p style="color:var(--muted); font-size:12px; margin: 16px 0 40px;">Progress is saved in your browser.</p>
+    <p style="color:var(--muted); font-size:12px; margin: 16px 0 40px; line-height:1.6;">
+      Your ticks are saved automatically in this browser and will be there when you come back — even after you close the tab or restart your computer.<br />
+      To back up your progress or move it to another device, use <b>Export</b> (top-right): the downloaded JSON file contains both your plan and your ticks. Import it anywhere to restore.
+    </p>
   `;
 
   // checklist interactions
@@ -1100,6 +1103,7 @@ function renderPlan(sessions, totalMins, topics) {
       const k = li.dataset.done;
       doneMap[k] = !doneMap[k];
       saveDone();
+      markSaved();
       li.classList.toggle('done', !!doneMap[k]);
       // Update counters
       const card = li.closest('.cov-card');
@@ -1142,13 +1146,21 @@ function applyPreset(name) {
 }
 
 function exportJSON() {
-  const blob = new Blob([JSON.stringify({ ...state, _exported: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+  const payload = {
+    _kind: 'study-plan',
+    _version: 2,
+    _exported: new Date().toISOString(),
+    state,
+    done: doneMap,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `study-plan-${new Date().toISOString().slice(0,10)}.json`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast('Exported plan JSON', 'ok');
+  const ticked = Object.values(doneMap).filter(Boolean).length;
+  toast(`Exported plan (${ticked} ticks included)`, 'ok');
 }
 function importJSON() { $('fileInput').click(); }
 $('fileInput').addEventListener('change', (e) => {
@@ -1157,11 +1169,17 @@ $('fileInput').addEventListener('change', (e) => {
   r.onload = () => {
     try {
       const imported = JSON.parse(r.result);
-      state = { ...DEFAULT_STATE(), ...imported, slots: { ...PRESETS.standard, ...(imported.slots || {}) } };
+      // Support both the new { state, done } envelope and the old flat format
+      const importedState = imported.state && typeof imported.state === 'object' ? imported.state : imported;
+      const importedDone  = imported.done  && typeof imported.done  === 'object' ? imported.done  : {};
+      state = { ...DEFAULT_STATE(), ...importedState, slots: { ...PRESETS.standard, ...(importedState.slots || {}) } };
       (state.subjects || []).forEach((s) => { if (!s.id) s.id = uid(); (s.topics || []).forEach((t) => { if (!t.id) t.id = uid(); }); });
+      doneMap = { ...importedDone };
       saveState();
+      saveDone();
       renderAll();
-      toast('Imported plan', 'ok');
+      const ticked = Object.values(doneMap).filter(Boolean).length;
+      toast(ticked ? `Imported plan (${ticked} ticks restored)` : 'Imported plan', 'ok');
     } catch (err) { toast('Invalid JSON file', 'err'); }
   };
   r.readAsText(file);
