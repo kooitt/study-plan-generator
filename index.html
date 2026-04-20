@@ -332,107 +332,112 @@
   }
   .persistence-note b { color: var(--ink); font-weight: 600; }
 
-  /* ---------- Cloud / login controls (inline, right of the tabs) ---------- */
+  /* ---------- Cloud sync: plan picker in tab bar, user info in header ---------- */
+
+  /* Plan-controls cluster that lives on the right side of the tab row. */
   .cloud-bar {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 8px;
     margin-left: auto; padding: 6px 0;
     font-size: 12px; min-width: 0;
   }
   .cloud-bar.hidden { display: none; }
-  .cloud-bar > .cloud-msg { color: var(--muted); min-width: 0; }
-  .cloud-bar > .cloud-msg b { color: var(--ink); }
-  /* When signed in, the status slot becomes a flex container for avatar + name + pill. */
-  .cloud-bar > .cloud-msg[data-signed="1"] { display: contents; }
-  /* Hide the verbose signed-out copy — the button is self-explanatory. */
-  .cloud-bar > .cloud-msg[data-signed="0"] { display: none; }
-  .cloud-bar .actions { display: flex; align-items: center; gap: 6px; }
+  .cloud-bar .actions { display: flex; align-items: center; gap: 8px; }
 
-  .cloud-bar .user-info {
-    display: flex; align-items: center; gap: 8px; min-width: 0; flex-shrink: 1;
-  }
-  .cloud-bar .avatar {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), var(--primary));
-    color: #fff;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-weight: 600; font-size: 12px;
-    flex-shrink: 0; overflow: hidden;
-    box-shadow: 0 1px 2px rgba(0,0,0,.12);
-  }
-  .cloud-bar .avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .cloud-bar .user-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
-  .cloud-bar .user-text .name { color: var(--ink); font-weight: 600; font-size: 12px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-  .cloud-bar .user-text .email { color: var(--muted); font-size: 10px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-  .cloud-bar .sync-pill {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 10px; color: var(--muted); font-weight: 500;
-    padding: 2px 7px; background: var(--panel-2);
-    border: 1px solid var(--line); border-radius: 999px;
-    white-space: nowrap;
-  }
-  .cloud-bar .sync-pill::before {
-    content: ""; width: 6px; height: 6px; border-radius: 50%;
-    background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.15);
-  }
-
-  .cloud-bar .plan-controls {
+  .plan-controls {
     display: flex; align-items: center; gap: 6px; flex: 0 1 auto;
   }
-  .cloud-bar .plan-label {
+  .plan-label {
     font-size: 10px; font-weight: 600; color: var(--muted);
     letter-spacing: 0.04em; text-transform: uppercase;
   }
-  .cloud-bar select.plan-picker {
-    max-width: 180px; padding: 4px 24px 4px 8px;
+  select.plan-picker {
+    max-width: 200px; padding: 5px 26px 5px 10px;
     font-size: 12px; font-weight: 500;
   }
-  .cloud-bar .plan-actions {
-    display: inline-flex; align-items: center;
+  .plan-actions {
+    display: inline-flex; align-items: stretch;
     background: var(--panel); border: 1px solid var(--line);
     border-radius: 8px; overflow: hidden;
   }
-  .cloud-bar .plan-actions .btn {
+  .plan-actions .btn {
     border-radius: 0; border: 0; border-right: 1px solid var(--line);
-    padding: 5px 8px; font-size: 11px;
-    background: transparent; box-shadow: none;
+    padding: 5px 10px; font-size: 12px;
+    background: transparent; color: var(--ink);
+    box-shadow: none;
     display: inline-flex; align-items: center; gap: 4px;
   }
-  .cloud-bar .plan-actions .btn:last-child { border-right: 0; }
-  .cloud-bar .plan-actions .btn:hover { background: var(--panel-2); }
-  .cloud-bar .plan-actions .btn.danger:hover {
-    background: color-mix(in srgb, var(--danger) 10%, transparent);
+  .plan-actions .btn:last-child { border-right: 0; }
+  .plan-actions .btn:hover { background: var(--panel-alt); color: var(--ink); }
+  .plan-actions .btn.danger { color: var(--muted); }
+  .plan-actions .btn.danger:hover {
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
     color: var(--danger);
   }
-  .cloud-bar .plan-actions .btn .ico {
-    width: 13px; height: 13px; flex-shrink: 0; stroke: currentColor;
+  .plan-actions .btn .ico {
+    width: 15px; height: 15px; flex-shrink: 0; stroke: currentColor;
     stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round;
+    display: block;
   }
-  .cloud-bar .plan-actions .btn.icon-only { padding: 5px 7px; }
+  .plan-actions .btn.icon-only { padding: 5px 9px; }
 
-  .cloud-bar .sign-out-btn {
+  /* Header slot for avatar + name/email + sign out (or sign-in when logged out). */
+  .cloud-user {
+    display: flex; align-items: center; gap: 10px;
+    padding-left: 10px; margin-left: 2px;
+    border-left: 1px solid var(--line);
+    min-width: 0;
+  }
+  .cloud-user.hidden { display: none; }
+
+  .cloud-user .user-info {
+    display: flex; align-items: center; gap: 8px; min-width: 0;
+  }
+  .cloud-user .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--primary));
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 13px;
+    flex-shrink: 0; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.12);
+  }
+  .cloud-user .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .cloud-user .user-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+  .cloud-user .user-text .name {
+    color: var(--ink); font-weight: 600; font-size: 12px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
+  }
+  .cloud-user .user-text .email {
+    color: var(--muted); font-size: 11px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
+  }
+
+  .cloud-user .sign-out-btn {
     background: transparent; color: var(--muted); border: 1px solid var(--line);
-    padding: 5px 8px; font-size: 11px; box-shadow: none; border-radius: 8px;
-    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 9px; font-size: 12px; box-shadow: none; border-radius: 7px;
+    display: inline-flex; align-items: center; gap: 5px;
     white-space: nowrap; cursor: pointer;
   }
-  .cloud-bar .sign-out-btn:hover { color: var(--ink); background: var(--panel-2); }
-
-  .cloud-bar .btn.google {
-    padding: 5px 10px; font-size: 12px;
+  .cloud-user .sign-out-btn:hover { color: var(--ink); background: var(--panel-alt); border-color: var(--line-strong); }
+  .cloud-user .sign-out-btn .ico {
+    width: 14px; height: 14px; stroke: currentColor; stroke-width: 2;
+    fill: none; stroke-linecap: round; stroke-linejoin: round;
   }
-  .cloud-bar .btn.google .g { width: 14px; height: 14px; }
 
-  @media (max-width: 820px) {
-    .cloud-bar .user-text .email { display: none; }
-    .cloud-bar .plan-label { display: none; }
+  .cloud-user .btn.google { padding: 5px 11px; font-size: 13px; }
+  .cloud-user .btn.google .g { width: 14px; height: 14px; }
+
+  @media (max-width: 900px) {
+    .cloud-user .user-text .email { display: none; }
+    .plan-label { display: none; }
   }
-  @media (max-width: 640px) {
-    .cloud-bar .plan-controls { display: none; }
-    .cloud-bar .user-text { display: none; }
-    .cloud-bar .sync-pill { display: none; }
-    .cloud-bar .sign-out-btn span { display: none; }
+  @media (max-width: 720px) {
+    .cloud-user .user-text { display: none; }
+    .cloud-user .sign-out-btn span { display: none; }
+    .cloud-user { padding-left: 8px; }
+  }
+  @media (max-width: 560px) {
+    .cloud-bar { display: none; }
   }
 
   .btn.google {
@@ -474,7 +479,7 @@
   }
   .modal .member button:hover { color: var(--danger); }
   .modal .close-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
-  @media print { .cloud-bar { display: none !important; } }
+  @media print { .cloud-bar, .cloud-user { display: none !important; } }
 
   /* ---------- Output ---------- */
   .stats-strip {
@@ -658,6 +663,7 @@
       <button class="btn" id="loadSample">Sample</button>
       <button class="btn" id="resetAll">Reset</button>
       <button class="btn primary" id="print" title="Opens the print dialog — choose 'Save as PDF' to export">Print / PDF</button>
+      <div id="cloudUser" class="cloud-user hidden" aria-live="polite"></div>
     </div>
   </header>
 
@@ -685,7 +691,6 @@
       <span class="count-pill" id="tabProgressCount">—</span>
     </button>
     <div id="cloudBar" class="cloud-bar hidden" aria-live="polite">
-      <div id="cloudStatus" class="cloud-msg">Checking cloud sync…</div>
       <div id="cloudActions" class="actions"></div>
     </div>
   </nav>
@@ -1795,17 +1800,24 @@ function applyRemotePlan(plan) {
 
 function updateCloudBar() {
   const cs = window.cloudSync;
-  const bar = $('cloudBar');
-  if (!cs || !cs.enabled) { bar.classList.add('hidden'); return; }
-  bar.classList.remove('hidden');
-  const status = $('cloudStatus');
+  const tabBar  = $('cloudBar');
   const actions = $('cloudActions');
+  const headSlot = $('cloudUser');
+
+  if (!cs || !cs.enabled) {
+    tabBar.classList.add('hidden');
+    headSlot.classList.add('hidden');
+    return;
+  }
   const user = cs.currentUser();
 
+  // Signed-out: hide the tab-bar plan controls and show a Sign in button in
+  // the header alongside Print / PDF.
   if (!user) {
-    status.dataset.signed = '0';
-    status.innerHTML = `<b>Cloud sync:</b> sign in to save your plan and checklist online.`;
-    actions.innerHTML = `
+    tabBar.classList.add('hidden');
+    actions.innerHTML = '';
+    headSlot.classList.remove('hidden');
+    headSlot.innerHTML = `
       <button class="btn google" id="signInBtn" type="button" title="Sign in with Google to sync across devices"><span class="g"></span>Sign in with Google</button>
     `;
     $('signInBtn').addEventListener('click', async () => {
@@ -1844,18 +1856,21 @@ function updateCloudBar() {
     signout:`<svg class="ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
   };
 
-  status.dataset.signed = '1';
-  status.innerHTML = `
-    <div class="user-info">
+  // Header slot: avatar + name/email + sign-out, beside Print / PDF.
+  headSlot.classList.remove('hidden');
+  headSlot.innerHTML = `
+    <div class="user-info" title="${esc(user.email || '')}">
       <div class="avatar">${photo}</div>
       <div class="user-text">
         <span class="name">${esc(name)}</span>
         <span class="email">${esc(user.email || '')}</span>
       </div>
-      <span class="sync-pill" title="Changes are saved to the cloud automatically">Synced</span>
     </div>
+    <button class="sign-out-btn" id="signOutBtn" type="button" title="Sign out">${ICO.signout}<span>Sign out</span></button>
   `;
 
+  // Tab-bar slot: plan picker + action cluster.
+  tabBar.classList.remove('hidden');
   actions.innerHTML = `
     <div class="plan-controls">
       ${plans.length > 0 ? `
@@ -1870,7 +1885,6 @@ function updateCloudBar() {
           <button class="btn sm icon-only danger" id="deleteBtn" type="button" title="Delete this plan" aria-label="Delete plan">${ICO.trash}</button>
         ` : ''}
       </div>
-      <button class="sign-out-btn" id="signOutBtn" type="button" title="Sign out">${ICO.signout}<span>Sign out</span></button>
     </div>
   `;
 
