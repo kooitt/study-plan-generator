@@ -316,25 +316,103 @@
 
   /* ---------- Cloud / login bar ---------- */
   .cloud-bar {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    padding: 8px 12px; border: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 10px 14px; border: 1px solid var(--line);
     background: linear-gradient(180deg, var(--panel), var(--panel-2));
-    border-radius: 10px; margin-bottom: 14px; font-size: 13px;
+    border-radius: 12px;
+    margin: 10px auto 14px;
+    max-width: 1244px;
+    font-size: 13px;
   }
+  @media (min-width: 1282px) { .cloud-bar { margin-left: auto; margin-right: auto; } }
+  @media (max-width: 1281px) { .cloud-bar { margin-left: 18px; margin-right: 18px; } }
   .cloud-bar.hidden { display: none; }
-  .cloud-bar .cloud-msg { color: var(--muted); flex: 1 1 auto; min-width: 0; }
-  .cloud-bar .cloud-msg b { color: var(--ink); }
+  .cloud-bar > .cloud-msg { color: var(--muted); flex: 1 1 auto; min-width: 0; }
+  .cloud-bar > .cloud-msg b { color: var(--ink); }
+
+  /* User block: avatar + name/email stacked */
+  .cloud-bar .user-info {
+    display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 0;
+  }
   .cloud-bar .avatar {
-    width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff;
-    display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--primary));
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 14px;
     flex-shrink: 0; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
   }
   .cloud-bar .avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .cloud-bar select.plan-picker {
-    max-width: 220px; padding: 6px 8px;
+  .cloud-bar .user-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+  .cloud-bar .user-text .name { color: var(--ink); font-weight: 600; font-size: 13px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+  .cloud-bar .user-text .email { color: var(--muted); font-size: 11px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+  .cloud-bar .sync-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--muted); font-weight: 500;
+    padding: 2px 8px; background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 999px;
+    white-space: nowrap;
   }
-  .cloud-bar .who { color: var(--ink); font-weight: 500; }
-  .cloud-bar .who small { color: var(--muted); font-weight: 400; margin-left: 4px; }
+  .cloud-bar .sync-pill::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.15);
+  }
+
+  /* Plan controls: picker with inline action cluster */
+  .cloud-bar .plan-controls {
+    display: flex; align-items: center; gap: 8px; flex: 0 1 auto;
+    margin-left: auto;
+  }
+  .cloud-bar .plan-label {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    padding-right: 2px;
+  }
+  .cloud-bar select.plan-picker {
+    max-width: 240px; padding: 6px 28px 6px 10px;
+    font-weight: 500;
+  }
+  .cloud-bar .plan-actions {
+    display: inline-flex; align-items: center; gap: 0;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; overflow: hidden;
+  }
+  .cloud-bar .plan-actions .btn {
+    border-radius: 0; border: 0; border-right: 1px solid var(--line);
+    padding: 6px 10px; font-size: 12px;
+    background: transparent; box-shadow: none;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .cloud-bar .plan-actions .btn:last-child { border-right: 0; }
+  .cloud-bar .plan-actions .btn:hover { background: var(--panel-2); }
+  .cloud-bar .plan-actions .btn.danger:hover {
+    background: color-mix(in srgb, var(--danger) 10%, transparent);
+    color: var(--danger);
+  }
+  .cloud-bar .plan-actions .btn .ico {
+    width: 14px; height: 14px; flex-shrink: 0; stroke: currentColor;
+    stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .cloud-bar .plan-actions .btn.icon-only { padding: 6px 8px; }
+
+  .cloud-bar .sign-out-btn {
+    background: transparent; color: var(--muted); border: 1px solid var(--line);
+    padding: 6px 10px; font-size: 12px; box-shadow: none;
+    display: inline-flex; align-items: center; gap: 4px;
+    white-space: nowrap;
+  }
+  .cloud-bar .sign-out-btn:hover { color: var(--ink); background: var(--panel-2); }
+
+  @media (max-width: 720px) {
+    .cloud-bar .plan-controls { margin-left: 0; width: 100%; }
+    .cloud-bar .user-info { width: 100%; justify-content: space-between; }
+    .cloud-bar .user-text .name,
+    .cloud-bar .user-text .email { max-width: 60vw; }
+  }
+
   .btn.google {
     background: #fff; color: #1f2937; border: 1px solid var(--line-strong);
     display: inline-flex; align-items: center; gap: 8px;
@@ -1565,6 +1643,7 @@ function updateCloudBar() {
 
   if (!user) {
     status.innerHTML = `<b>Cloud sync:</b> sign in to save your plan and checklist online and share with others.`;
+    status.style.display = '';
     actions.innerHTML = `
       <button class="btn google" id="signInBtn" type="button"><span class="g"></span>Sign in with Google</button>
     `;
@@ -1586,28 +1665,52 @@ function updateCloudBar() {
   const activeId = cs.currentPlanId();
   const active = plans.find((p) => p.id === activeId);
   const name = user.displayName || user.email || 'Signed in';
-  const initial = (name[0] || '?').toUpperCase();
+  const initial = (name.trim()[0] || '?').toUpperCase();
   const photo = user.photoURL ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer" />` : esc(initial);
+  const isOwner = active && active.ownerUid === user.uid;
 
-  const options = plans.map((p) =>
-    `<option value="${esc(p.id)}" ${p.id === activeId ? 'selected' : ''}>${esc(p.name || 'Untitled plan')}${p.ownerUid !== user.uid ? ' (shared)' : ''}</option>`
-  ).join('');
+  const options = plans.map((p) => {
+    const suffix = p.ownerUid !== user.uid ? ' (shared with you)' : '';
+    return `<option value="${esc(p.id)}" ${p.id === activeId ? 'selected' : ''}>${esc(p.name || 'Untitled plan')}${suffix}</option>`;
+  }).join('');
+
+  // Inline SVG icons (stroke-based, inherit color).
+  const ICO = {
+    plus:   `<svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>`,
+    edit:   `<svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`,
+    share:  `<svg class="ico" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>`,
+    trash:  `<svg class="ico" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`,
+    signout:`<svg class="ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+  };
 
   status.innerHTML = `
-    <span class="avatar">${photo}</span>
-    <span class="who">${esc(name)} <small>${esc(user.email || '')}</small></span>
+    <div class="user-info">
+      <div class="avatar">${photo}</div>
+      <div class="user-text">
+        <span class="name">${esc(name)}</span>
+        <span class="email">${esc(user.email || '')}</span>
+      </div>
+      <span class="sync-pill" title="Changes are saved to the cloud automatically">Synced</span>
+    </div>
   `;
-  status.style.display = 'inline-flex'; status.style.alignItems = 'center'; status.style.gap = '8px';
+  status.style.display = 'contents';
 
   actions.innerHTML = `
-    ${plans.length > 0 ? `<select id="planPicker" class="plan-picker" title="Switch plan">${options}</select>` : ''}
-    <button class="btn sm" id="newPlanBtn" type="button" title="Create a new plan">+ New</button>
-    ${active && active.ownerUid === user.uid ? `
-      <button class="btn sm" id="renameBtn" type="button" title="Rename this plan">Rename</button>
-      <button class="btn sm" id="shareBtn"  type="button" title="Share with another user">Share…</button>
-      <button class="btn sm" id="deleteBtn" type="button" title="Delete this plan">Delete</button>
-    ` : ''}
-    <button class="btn sm" id="signOutBtn" type="button">Sign out</button>
+    <div class="plan-controls">
+      ${plans.length > 0 ? `
+        <span class="plan-label">Plan</span>
+        <select id="planPicker" class="plan-picker" title="Switch plan">${options}</select>
+      ` : ''}
+      <div class="plan-actions">
+        <button class="btn sm" id="newPlanBtn" type="button" title="Create a new plan">${ICO.plus}<span>New</span></button>
+        ${isOwner ? `
+          <button class="btn sm icon-only" id="renameBtn" type="button" title="Rename this plan" aria-label="Rename plan">${ICO.edit}</button>
+          <button class="btn sm icon-only" id="shareBtn"  type="button" title="Share with another user" aria-label="Share plan">${ICO.share}</button>
+          <button class="btn sm icon-only danger" id="deleteBtn" type="button" title="Delete this plan" aria-label="Delete plan">${ICO.trash}</button>
+        ` : ''}
+      </div>
+      <button class="sign-out-btn" id="signOutBtn" type="button" title="Sign out">${ICO.signout}<span>Sign out</span></button>
+    </div>
   `;
 
   if ($('planPicker')) {
